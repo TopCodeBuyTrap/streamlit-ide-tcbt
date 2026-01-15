@@ -1,0 +1,38 @@
+INSTALAÇÕES E MOSULOS E PENDENCIAS PARA OPROJETO
+
+# Atualiza o gerenciador de pacotes, setuptools e wheel essenciais para instalação de pacotes
+python.exe -m pip install --upgrade pip
+python -m pip install --upgrade setuptools wheel
+
+# Criar App para executavel em pc
+pip install streamlit-desktop-app
+
+# Editor de codigos
+pip install streamlit-ace==0.1.1
+
+
+
+
+streamlit run APP_.py
+
+
+
+
+
+# FALTA IMPLEMTAR :
+1. Salvar arquivos automaticamente
+Todo código que o usuário digitar deve ser salvo automaticamente em uma pasta específica.
+Essa pasta vai armazenar todos os arquivos de todos os projetos que o usuário criar.
+Funciona como um repositório local de projetos da IDE.
+
+2. Botão para baixar arquivos
+Implementar uma função que permita ao usuário baixar qualquer arquivo criado ou usado na IDE.
+O usuário poderá escolher o local de destino no computador.
+
+3. Pré-instalação de módulos ao criar um projeto
+Ao criar um novo projeto, a IDE deve instalar automaticamente módulos ou bibliotecas que o projeto precisa.
+Isso garante que o projeto já esteja configurado e pronto para rodar sem ajustes manuais.
+
+
+
+
