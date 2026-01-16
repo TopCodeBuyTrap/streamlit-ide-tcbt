@@ -237,7 +237,8 @@ def Janela_PESQUIZA(st,DIRETORIO):
             )
 
     # HEADER
-    st.write(st.session_state.diretorio_atual)
+    # ✅ CORRETO
+    st.text_input(label="📁 Diretório Atual", value=st.session_state.diretorio_atual, disabled=True)
 
     if st.session_state.aviso_procurar:
         st.error(st.session_state.aviso_procurar)

@@ -438,31 +438,29 @@ LANGUAGE_EXTENSIONS = {
 
 
 def Cria_Arquivos(st):
-    st.session_state.setdefault("dialog_Cria_Arquivos", True)
-    @st.dialog("Criar Arquivos:")
-    def menu_principal():
-        if "linguagem" not in st.session_state:
-            st.session_state.linguagem = None
+    if "linguagem" not in st.session_state:
+        st.session_state.linguagem = None
 
-        Menu_Principal, Sub_Menu = st.columns([1, 2])
+    Menu_Principal, Sub_Menu = st.columns([1, 2])
 
-        with Menu_Principal:
-            linguagem = st.selectbox(
-                "Linguagem:",
-                ["Novo:"] + list(LANGUAGE_EXTENSIONS.keys()),
-                index=0,
-                label_visibility="collapsed",
-                key="select_linguagem"
-            )
-            st.session_state.linguagem = linguagem
+    with Menu_Principal:
+        linguagem = st.selectbox(
+            "Linguagem:",
+            ["Novo:"] + list(LANGUAGE_EXTENSIONS.keys()),
+            index=0,
+            label_visibility="collapsed",
+            key="select_linguagem"
+        )
+        st.session_state.linguagem = linguagem
 
-        if linguagem and linguagem != "Novo:":
-            extensao = LANGUAGE_EXTENSIONS[linguagem]
+    if linguagem and linguagem != "Novo:":
+        extensao = LANGUAGE_EXTENSIONS[linguagem]
 
-            with Sub_Menu:
-                nome_arquivo = st.text_input("Nome do arquivo")
+        with Sub_Menu:
+            nome_arquivo = st.text_input("Nome do arquivo")
 
-                if st.button("Confirmar"):
+            if st.button("Confirmar"):
+                if nome_arquivo:
                     Pasta_RAIZ_projeto = _DIRETORIO_PROJETO_ATUAL_()
                     nome_final = nome_arquivo + extensao
                     Caminho_Absoluto = os.path.join(Pasta_RAIZ_projeto, nome_final)
@@ -471,73 +469,57 @@ def Cria_Arquivos(st):
                     #esc_A_CONTROLE_ARQUIVOS(nome_final,Caminho_Absoluto,linguagem,extensao,"","CRIADO")
 
                     st.success(f"Arquivo criado: {nome_final}")
-                    st.session_state.dialog_Cria_Arquivos = False
                     st.rerun()
-
-    if st.session_state.dialog_Cria_Arquivos:
-        menu_principal()
+                else:
+                    st.warning('🤔 Uai de um Nome Né!')
 
 
 def Abrir_Projeto(st):
-    st.session_state.setdefault("abrir_projeto", True)
+    # USO PRINCIPAL ✅ COMPLETO COM ABERTURA
+    RESULTADO = Janela_PESQUIZA(st,_DIRETORIO_PROJETOS_())
 
-    @st.dialog("Abrir Projeto/Arquivo", width="500")
-    def dialog_content():
-        # USO PRINCIPAL ✅ COMPLETO COM ABERTURA
-        RESULTADO = Janela_PESQUIZA(st,_DIRETORIO_PROJETOS_())
+    if RESULTADO[0]:
+        caminho, tipo = RESULTADO
+        nome_arq = os.path.basename(caminho)
+        extensao = Path(caminho).suffix
 
-        if RESULTADO[0]:
-            caminho, tipo = RESULTADO
-            nome_arq = os.path.basename(caminho)
-            extensao = Path(caminho).suffix
+        if tipo == '📄 ARQUIVO':
+            if st.button(f"📄 **Abrir: {nome_arq}**", use_container_width=True):
+                try:
+                    with open(caminho, "r", encoding="utf-8") as f:
+                        conteudo = f.read()
+                    esc_CONTROLE_ARQUIVOS(nome_arq, caminho, conteudo, extensao)
+                    st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
+                    st.success(f"✅ {nome_arq} salvo no banco!")
+                    st.session_state.abrir_projeto = False
 
-            if tipo == '📄 ARQUIVO':
-                if st.button(f"📄 **Abrir: {nome_arq}**", use_container_width=True):
-                    try:
-                        with open(caminho, "r", encoding="utf-8") as f:
-                            conteudo = f.read()
-                        esc_CONTROLE_ARQUIVOS(nome_arq, caminho, conteudo, extensao)
-                        st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
-                        st.success(f"✅ {nome_arq} salvo no banco!")
-                        st.session_state.abrir_projeto = False
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Erro ao ler: {e}")
 
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Erro ao ler: {e}")
+        elif tipo == '📁 DIRETÓRIO':
+            if st.button(f"**Abrir Projeto: {nome_arq}**", use_container_width=True):
 
-            elif tipo == '📁 DIRETÓRIO':
-                if st.button(f"**Abrir Projeto: {nome_arq}**", use_container_width=True):
+                try:
+                    pasta_pai = Path(caminho).parent
+                    st.write(caminho, pasta_pai)
+                    esc_B_ARQUIVOS_RECENTES(str(caminho), pasta_pai)
 
-                    try:
-                        pasta_pai = Path(caminho).parent
-                        st.write(caminho, pasta_pai)
-                        esc_B_ARQUIVOS_RECENTES(str(caminho), pasta_pai)
-
-                        st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
-                        st.success(f"✅ Projeto {nome_arq} salvo no banco!")
-                        st.session_state.abrir_projeto = False
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Erro ao salvar projeto: {e}")
+                    st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
+                    st.success(f"✅ Projeto {nome_arq} salvo no banco!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Erro ao salvar projeto: {e}")
 
 
-    if st.session_state.abrir_projeto:
-        dialog_content()
 
 
-def Abrir_Menu(st,col):
-
-    # Estados
-    if "pills_selection" not in st.session_state:
-        st.session_state.pills_selection = None
-    if "dialog_open" not in st.session_state:
-        st.session_state.dialog_open = False
-    st.write('_TcBt')
+def Abrir_Menu(st):
+    st.write('{TcbT}')
     # Opções
     option_map = {0: ":material/dashboard_customize:",
                   1: ":material/folder_open:",
-                  2: ":material/library_add:",
-                  3: ":material/format_color_fill:",}
+                  2: ":material/library_add:",}
 
     # Pills single ou multi
     selection = st.pills(
@@ -548,292 +530,215 @@ def Abrir_Menu(st,col):
         label_visibility="collapsed",
     )
 
-    # Atualiza seleção no estado
-    if selection is not None:
-        st.session_state.pills_selection = selection
-        st.session_state.dialog_open = False  # reset para poder abrir
 
-    # Disparador do dialog
-    if st.session_state.pills_selection is not None and not st.session_state.dialog_open:
-        if selection == 0:
-            Cria_Projeto(st,col)
-            st.text('CRIA')
-
-        if selection == 1:
-            Abrir_Projeto(st)
-            st.write('ABRE')
-
-        if selection == 2:
-            Cria_Arquivos(st)
-            st.write('CRIA')
-
-
-        if selection == 3:
-            Custom(st)
-            st.write('CUST')
-
-        st.session_state.dialog_open = True
-
-
-def Abrir_Menu_(st):
-    """
-    ✅ BOTÕES que NÃO FICAM PREIONADOS + SEM RERUN até finalizar!
-    Cada botão executa e volta limpo para próximo uso
-    """
-
-    # Estados
-    if "menu_executando" not in st.session_state:
-        st.session_state.menu_executando = False
-    if "ultima_acao" not in st.session_state:
-        st.session_state.ultima_acao = None
-
-    st.write('_TcBt')
-
-    # Container para botões bonitos
-
-    # Opções com ícones
-    botoes = {
-        0: ("Criar Projeto", ":material/dashboard_customize:"),
-        1: ("Abrir Projeto", ":material/folder_open:"),
-        2: ("Criar Arquivos", ":material/library_add:"),
-        3: ("Customizar", ":material/format_color_fill:")
-    }
-
-    # BOTÃO 1 - Criar Projeto
-    if st.button(botoes[0][1],
-                 key="btn_0",
-                 type="secondary",
-                 disabled=st.session_state.menu_executando):
-        st.session_state.ultima_acao = "Criar Projeto"
+    if selection == 0:
         Cria_Projeto(st)
-        st.text('CRIA')
 
-# BOTÃO 2 - Abrir Projeto
-    if st.button(botoes[1][1],
-                 key="btn_1",
-                 type="secondary",
-                 disabled=st.session_state.menu_executando):
-        st.session_state.ultima_acao = "Abrir Projeto"
-        Abrir_Projeto(st)
-        st.write('ABRE')
+    if selection == 1:
+        with st.container(border=True, key='Braço_Sidebar', width=900):
+            Abrir_Projeto(st)
 
-# BOTÃO 3 - Criar Arquivos
-    if st.button(botoes[2][1],
-                 key="btn_2",
-                 type="secondary",
-                 disabled=st.session_state.menu_executando):
-        st.session_state.ultima_acao = "Criar Arquivos"
-        Cria_Arquivos(st)
-        st.write('CRIA')
+    if selection == 2:
+        with st.container(border=True, key='Braço_Sidebar', width=900):
+            Cria_Arquivos(st)
 
-# BOTÃO 4 - Customizar
-    if st.button(botoes[3][1],
-                 key="btn_3",
-                 type="secondary",
-                 disabled=st.session_state.menu_executando):
-        st.session_state.ultima_acao = "Customizar"
+
+    if st.button('🎨', key="rolandia12"):
         Custom(st)
-        st.write('CUST')
-
-    # ✅ Status dos botões (só desabilita durante execução)
-    if st.session_state.menu_executando:
-        st.info(f"⏳ Executando: **{st.session_state.ultima_acao}**")
-    else:
-        st.caption("👆 Clique em qualquer botão para executar")
 
 
-# =============================================================================
-# SEQUER PRECISA RERUN - FUNCIONA NATURALMENTE!
-# =============================================================================
 
-
-def Cria_Projeto(st,col):
+def Cria_Projeto(st):
     from Banco_Predefinitions import listar_templates, salvar_template, carregar_template
-    st.write("'Henriq colocar para instalar modulos pre configurados!'")
-    if "abas" not in st.session_state:
-        st.session_state.abas = ["Terminal"]
+    st.session_state.setdefault("dialog_criar_projeto", True)
+    @st.dialog("Criar Novo Projeto")
+    def menu_principal():
+        st.write("'Henriq colocar para instalar modulos pre configurados!'")
+        if "abas" not in st.session_state:
+            st.session_state.abas = ["Terminal"]
 
-    if "contador_local" not in st.session_state:
-        st.session_state.contador_local = 0
+        if "contador_local" not in st.session_state:
+            st.session_state.contador_local = 0
 
-    def abrir_nova_aba():
-        st.session_state.contador_local += 1
-        nome = f"Local {st.session_state.contador_local}"
-        st.session_state.abas.append(nome)
-        st.rerun()
-
-    def fechar_aba(nome):
-        if nome != "Terminal":
-            st.session_state.abas.remove(nome)
+        def abrir_nova_aba():
+            st.session_state.contador_local += 1
+            nome = f"Local {st.session_state.contador_local}"
+            st.session_state.abas.append(nome)
             st.rerun()
 
-
-    # =========================
-    # DADOS DO PROJETO
-    # =========================
-
-    caminho_base = st.text_input("**Criar em:**", _DIRETORIO_PROJETOS_())
-    nome_projeto = st.text_input("Nome do projeto")
-
-    # =========================
-    # ARQUIVOS INICIAIS
-    # =========================
-    with st.expander("📁 Arquivos iniciais do projeto", expanded=True):
-
-        if "arquivos_projeto" not in st.session_state:
-            st.session_state.arquivos_projeto = [
-                {
-                    "nome": "main.py",
-                    "conteudo": "# Arquivo principal\n\nif __name__ == '__main__':\n    print('Projeto iniciado')\n"
-                }
-            ]
-
-        templates = listar_templates()
-        template_sel = st.selectbox(
-            "Template salvo",
-            ["(novo)"] + templates
-        )
-
-        if template_sel != "(novo)":
-            st.session_state.arquivos_projeto = carregar_template(template_sel)
-
-        for i, arq in enumerate(st.session_state.arquivos_projeto):
-            st.markdown(f"**Arquivo {i+1}**")
-            col1, col2 = st.columns([4, 1])
-
-            arq["nome"] = col1.text_input(
-                "Nome do arquivo",
-                arq["nome"],
-                key=f"nome_arq_{i}"
-            )
-
-            if col2.button("🗑", key=f"del_arq_{i}"):
-                st.session_state.arquivos_projeto.pop(i)
+        def fechar_aba(nome):
+            if nome != "Terminal":
+                st.session_state.abas.remove(nome)
                 st.rerun()
 
-            arq["conteudo"] = st.text_area(
-                "Conteúdo",
-                arq["conteudo"],
-                height=150,
-                key=f"cont_arq_{i}"
+
+        # =========================
+        # DADOS DO PROJETO
+        # =========================
+
+        caminho_base = st.text_input("**Criar em:**", _DIRETORIO_PROJETOS_())
+        nome_projeto = st.text_input("Nome do projeto")
+
+        # =========================
+        # ARQUIVOS INICIAIS
+        # =========================
+        with st.expander("📁 Arquivos iniciais do projeto", expanded=True):
+
+            if "arquivos_projeto" not in st.session_state:
+                st.session_state.arquivos_projeto = [
+                    {
+                        "nome": "main.py",
+                        "conteudo": "# Arquivo principal\n\nif __name__ == '__main__':\n    print('Projeto iniciado')\n"
+                    }
+                ]
+
+            templates = listar_templates()
+            template_sel = st.selectbox(
+                "Template salvo",
+                ["(novo)"] + templates
             )
 
-        if st.button("➕ Adicionar arquivo"):
-            st.session_state.arquivos_projeto.append(
-                {"nome": "", "conteudo": ""}
-            )
-            st.rerun()
+            if template_sel != "(novo)":
+                st.session_state.arquivos_projeto = carregar_template(template_sel)
 
-        nome_template = st.text_input("Salvar como template")
-        if st.button("💾 Salvar template"):
-            if nome_template.strip() and template_sel != '':
-                salvar_template(str(nome_template).title(), st.session_state.arquivos_projeto)
-                st.success("Template salvo com sucesso!")
-            else:
-                st.warning('Dê um nome ao template?')
+            for i, arq in enumerate(st.session_state.arquivos_projeto):
+                st.markdown(f"**Arquivo {i+1}**")
+                col1, col2 = st.columns([4, 1])
 
-    st.divider()
+                arq["nome"] = col1.text_input(
+                    "Nome do arquivo",
+                    arq["nome"],
+                    key=f"nome_arq_{i}"
+                )
 
-    # =========================
-    # CRIAÇÃO DO PROJETO
-    # =========================
-    pythons = listar_pythons_windows()
+                if col2.button("🗑", key=f"del_arq_{i}"):
+                    st.session_state.arquivos_projeto.pop(i)
+                    st.rerun()
 
-    if not pythons:
-        st.error("Nenhum Python encontrado em AppData")
-        return
+                arq["conteudo"] = st.text_area(
+                    "Conteúdo",
+                    arq["conteudo"],
+                    height=150,
+                    key=f"cont_arq_{i}"
+                )
 
-    python_selecionado = st.selectbox(
-        "Python base do projeto",
-        list(pythons.keys()),
-        index=0
-    )
+            if st.button("➕ Adicionar arquivo"):
+                st.session_state.arquivos_projeto.append(
+                    {"nome": "", "conteudo": ""}
+                )
+                st.rerun()
 
-    if st.button("✅ Confirmar criação"):
+            nome_template = st.text_input("Salvar como template")
+            if st.button("💾 Salvar template"):
+                if nome_template.strip() and template_sel != '':
+                    salvar_template(str(nome_template).title(), st.session_state.arquivos_projeto)
+                    st.success("Template salvo com sucesso!")
+                else:
+                    st.warning('Dê um nome ao template?')
 
-        if not nome_projeto.strip():
-            st.error("Nome do projeto inválido")
+        st.divider()
+
+        # =========================
+        # CRIAÇÃO DO PROJETO
+        # =========================
+        pythons = listar_pythons_windows()
+
+        if not pythons:
+            st.error("Nenhum Python encontrado em AppData")
             return
 
-        projeto_path = Path(caminho_base) / nome_projeto.replace(" ", "_")
-        venv_path = projeto_path / ".virtual_tcbt"
-        python_base = pythons[python_selecionado]
-        esc_B_ARQUIVOS_RECENTES(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado)
+        python_selecionado = st.selectbox(
+            "Python base do projeto",
+            list(pythons.keys()),
+            index=0
+        )
 
-        progresso = st.progress(0)
-        log_area = st.empty()
+        if st.button("✅ Confirmar criação"):
 
-        logs = []
+            if not nome_projeto.strip():
+                st.error("Nome do projeto inválido")
+                return
 
-        def log(msg, pct=None):
-            logs.append(msg)
-            log_area.code("\n".join(logs), language="bash")
-            if pct is not None:
-                progresso.progress(pct)
+            projeto_path = Path(caminho_base) / nome_projeto.replace(" ", "_")
+            venv_path = projeto_path / ".virtual_tcbt"
+            python_base = pythons[python_selecionado]
+            esc_B_ARQUIVOS_RECENTES(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado)
 
-        try:
-            # 1️⃣ Criar pasta do projeto
-            log("📁 Criando pasta do projeto...", 5)
-            projeto_path.mkdir(parents=True, exist_ok=False)
+            progresso = st.progress(0)
+            log_area = st.empty()
 
-            # 2️⃣ Criar ambiente virtual
-            log("🐍 Criando ambiente virtual...", 25)
-            subprocess.run(
-                [python_base, "-m", "venv", str(venv_path)],
-                check=True
-            )
+            logs = []
 
-            python_venv = (
-                venv_path / "Scripts" / "python.exe"
-                if sys.platform == "win32"
-                else venv_path / "bin" / "python"
-            )
+            def log(msg, pct=None):
+                logs.append(msg)
+                log_area.code("\n".join(logs), language="bash")
+                if pct is not None:
+                    progresso.progress(pct)
 
-            # 3️⃣ Atualizar pip
-            log("⬆️ Atualizando pip...", 50)
-            subprocess.run(
-                [str(python_venv), "-m", "pip", "install", "--upgrade", "pip"],
-                check=True
-            )
+            try:
+                # 1️⃣ Criar pasta do projeto
+                log("📁 Criando pasta do projeto...", 5)
+                projeto_path.mkdir(parents=True, exist_ok=False)
 
-            # 4️⃣ Criar arquivos do usuário
-            log("📝 Criando arquivos do projeto...", 75)
-            for arq in st.session_state.arquivos_projeto:
-                if arq["nome"].strip():
-                    caminho = projeto_path / arq["nome"]
-                    caminho.parent.mkdir(parents=True, exist_ok=True)
-                    caminho.write_text(arq["conteudo"], encoding="utf-8")
-                    log(f"   ✔ {arq['nome']}")
+                # 2️⃣ Criar ambiente virtual
+                log("🐍 Criando ambiente virtual...", 25)
+                CREATE_NO_WINDOW = 0x08000000
 
-            # 5️⃣ Finalização
-            log("✅ Projeto criado com sucesso!", 100)
-            st.success(f"🎉 Projeto criado com sucesso usando {python_selecionado}")
-            st.rerun()
-        except FileExistsError:
-            log("❌ Erro: o projeto já existe")
-            st.error("O projeto já existe")
+                subprocess.run(
+                    [python_base, "-m", "venv", str(venv_path)],
+                    check=True,
+                    creationflags=CREATE_NO_WINDOW)
 
-        except subprocess.CalledProcessError as e:
-            log("❌ Erro ao criar ambiente virtual ou instalar dependências")
-            st.exception(e)
+                python_venv = (
+                    venv_path / "Scripts" / "python.exe"
+                    if sys.platform == "win32"
+                    else venv_path / "bin" / "python"
+                )
 
-        except Exception as e:
-            log("❌ Erro inesperado")
-            st.exception(e)
+                # 3️⃣ Atualizar pip
+                log("⬆️ Atualizando pip...", 50)
+                subprocess.run(
+                    [str(python_venv), "-m", "pip", "install", "--upgrade", "pip"],
+                    check=True,
+                    creationflags=CREATE_NO_WINDOW)
 
+                # 4️⃣ Criar arquivos do usuário
+                log("📝 Criando arquivos do projeto...", 75)
+                for arq in st.session_state.arquivos_projeto:
+                    if arq["nome"].strip():
+                        caminho = projeto_path / arq["nome"]
+                        caminho.parent.mkdir(parents=True, exist_ok=True)
+                        caminho.write_text(arq["conteudo"], encoding="utf-8")
+                        log(f"   ✔ {arq['nome']}")
+
+                # 5️⃣ Finalização
+                log("✅ Projeto criado com sucesso!", 100)
+                st.success(f"🎉 Projeto criado com sucesso usando {python_selecionado}")
+
+                st.session_state.dialog_criar_projeto = False
+                st.rerun()
+            except FileExistsError:
+                log("❌ Erro: o projeto já existe")
+                st.error("O projeto já existe")
+
+            except subprocess.CalledProcessError as e:
+                log("❌ Erro ao criar ambiente virtual ou instalar dependências")
+                st.exception(e)
+
+            except Exception as e:
+                log("❌ Erro inesperado")
+                st.exception(e)
+
+    if st.session_state.dialog_criar_projeto:
+        menu_principal()
 
 
 
 
 def Apagar_Arq(st,Arq_Selec,nome):
-    st.session_state.setdefault("Apagar_Arquivos", True)
-    @st.dialog("Apagar Arquivos:")
-    def menu_principal():
-        st.code(f"🗑️ Tem certeza de que deseja apagar \n{nome}?")
-        if st.button(f"**❌ Apagar Sim!**", key=f"{Arq_Selec}_btn_del2", use_container_width=True,type="secondary"):
-            Apagar_Arquivos(st, Arq_Selec)
-            st.session_state.Apagar_Arquivos = False
-            st.rerun()
+    st.code(f"🗑️ Tem certeza de que deseja apagar \n{nome}?")
+    if st.button(f"**❌ Apagar Sim!**", key=f"{Arq_Selec}_btn_del2", use_container_width=True,type="secondary"):
+        Apagar_Arquivos(st, Arq_Selec)
+        st.session_state.Apagar_Arquivos = False
+        st.rerun()
 
-    if st.session_state.Apagar_Arquivos:
-        menu_principal()

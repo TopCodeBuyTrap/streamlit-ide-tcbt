@@ -64,8 +64,6 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 		if sincronizar_estrutura(caminho) == False:# verifica se o aruivo esta no ".virtual_tcbt" / "Arvore_projeto.json"
 			if se_CONTROLE_ARQUIVOS(caminho, None):
 					todos_abertos.append((nome_arq, caminho, "banco"))
-		else:
-			st.warning(caminho)
 
 	# Remove duplicatas mantendo último (MELHORADO)
 	vistos = set()

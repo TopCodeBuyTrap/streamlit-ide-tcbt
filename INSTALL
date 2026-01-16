@@ -36,3 +36,20 @@ Isso garante que o projeto já esteja configurado e pronto para rodar sem ajuste
 
 
 
+# Para criar o executavel:
+
+streamlit-desktop-app build APP_.py `
+  --name TcbT_Stream_IDE `
+  --streamlit-options --theme.base=dark `
+  --pyinstaller-options `
+    --onedir --noconsole --noconfirm `
+    --collect-all streamlit `
+
+
+Nao coloquei
+  --icon icon.ico `
+
+
+    --add-data "logo.png;." `
+    --add-data "qrcode.png;."
+

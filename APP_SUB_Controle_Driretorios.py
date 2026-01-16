@@ -7,9 +7,8 @@ def _DIRETORIO_EXECUTAVEL_(arquivo=''):# onde o executavel vai ser instalado
     from Banco_dados import ler_A_CONTROLE_ABSOLUTO
     Pasta_Isntal_exec = Path(ler_A_CONTROLE_ABSOLUTO()[0][0]).resolve() # Caminho absoluto do arquivo atual   HENRIQUE TROCAR ISSO DEPOIS
     # Pastas relativas à pasta_projeto
-    arquivos = Pasta_Isntal_exec / '.arquivos'
-    if arquivos == '.arquivos':
-        return arquivos
+    if arquivo == '.arquivos':
+        return Path(Pasta_Isntal_exec,'.arquivos')
     else:
         return Pasta_Isntal_exec
 

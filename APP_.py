@@ -47,7 +47,6 @@ def Testar_Fluxo_Run(col):
 
 
 def app(col1,col2 ):
-
     # Executando a página selecionada
 
     if len(ler_B_ARQUIVOS_RECENTES()) == 0:
@@ -62,7 +61,7 @@ def app(col1,col2 ):
     else:
         with col1:
             from APP_Menus import Abrir_Menu
-            Abrir_Menu(st,col2)
+            Abrir_Menu(st)
         # ============================================================= MENU SUPERIOR
         with col2.expander("⚙️ Configuração de Layot"):
             m1, m2, m3, m4 = st.columns([3, 4, 3, 3])
@@ -196,8 +195,8 @@ def app(col1,col2 ):
         extensao_arquivo = caminho.suffix  # pega a extensão, ex: ".py"
         nome_arquivo = os.path.basename(Arq_Selec)
         if col1.pills(f'Run', ":material/delete:", label_visibility='collapsed'):
-            Apagar_Arq(st, Arq_Selec,nome_arquivo)
-
+            with st.container(border=True, key='Braço_Sidebar', width=900):
+                Apagar_Arq(st, Arq_Selec,nome_arquivo)
             #--------------------------------------------------------------------- BUSSCAR ARQUIVOS SELECIONADO
         if Arq_Selec:
             if Arq_Selec.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
@@ -222,6 +221,11 @@ if __name__ == "__main__":
         from APP_Htmls import Main_App
         IMAGEM_LOGO ,NOME_CUSTOM, COR_CAMPO,COR_MENU = Main_App(st)
         col1,col2 = st.columns([.3,9])
+
+
+
+
+
         app(col1,col2 )
 
     # 🔹 SENÃO → MOSTRA ABERTURA

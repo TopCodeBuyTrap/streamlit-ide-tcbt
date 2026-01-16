@@ -80,8 +80,9 @@ def Main_App(st):
         font-size: {TAM_CAMPO}px !important;
     }}
 
-    /* Botões */
-    div[data-testid="stButton"] button {{
+    
+    div[data-testid="stButton"] button {{                               /* Botões */
+        background-color: {THEMA_APP1} !important;
         color: {COR_CAMPO} !important;
         font-size: {TAM_MENU}px !important;
         height: 30px !important;
@@ -89,7 +90,6 @@ def Main_App(st):
         line-height: 20px !important;
         min-height: 24px !important;
         border-radius: {RADIO}px !important;
-        border: {BORDA}px solid {COR_CAMPO} !important;
     }}
 
     /* Radio e Slider */
@@ -158,6 +158,27 @@ def Main_App(st):
         margin-left: 0 !important;
         height: 95% !important;
     }}
+
+    div[data-testid="stVerticalBlock"][class*="st-key-Bra-o_Sidebar"] {{ /* MENU LATERAL DIREITO - AO LADO DO SIDEBAR */
+        background-color: {SIDEBAR_COR} !important;
+	    position: absolute !important;
+	    top: 5% !important;  /* Alinha no topo do sidebar */
+		left: 10% !important;
+	    border-radius: {RADIO}px !important;
+	    border: {BORDA}px solid {COR_CAMPO} !important;
+	    z-index: 999999 !important;
+	    width: 600px; /* Largura fixa do seu bloco */
+	    transition: transform .001s ease !important; /* Animação suave */
+	}}
+
+
+
+	/* Container principal para posicionamento correto */
+	section[data-testid="stAppViewContainer"] {{
+	    position: relative !important;
+	}}
+
+    
     [data-testid="stExpandSidebarButton"] {{                                   
         background-color: {COR_MENU} !important;
         margin-top: 0% !important;
@@ -178,7 +199,7 @@ def Main_App(st):
     }}  */
 	
 	    
-    [data-testid="stBaseButton-pills"] {{  /* ST.PILLS BOTAO */
+    [data-testid="stBaseButton-pills"] {{                               /* ST.PILLS BOTAO */
         background-color: {THEMA_APP1} !important;
         border: {BORDA}px solid {COR_CAMPO} !important; 
 
@@ -191,6 +212,13 @@ def Main_App(st):
         width: 10% !important;
         right: 45% !important;
         z-index: 9999 !important;
+        
+         /* ✅ SCROLL HABILITADO */
+	    overflow: visible !important;  /* Permite conteúdo maior */
+	    max-height: none !important;   /* Remove limitação de altura */
+	    height: auto !important;       /* Altura dinâmica */
+	    
+	    
     }}
     
     [data-testid="stCustomComponentV1"] {{                                      /* EDITORES DE CODIGOS */
@@ -202,17 +230,18 @@ def Main_App(st):
     }}
 
 
-    div[data-testid="stButton"][class*="st-key-nome_da_sua_key"] {{  /* CONTAINERS */
+	    div[data-testid="stButton"][class*="st-key-nome_da_sua_key"] {{             /* CONTAINERS */
         background-color: {THEMA_APP1} !important;
         padding: 0 !important;
         height: 5% !important;
-        z-index: 9999 !important;
 
     }}
-        div[data-testid="stVerticalBlock"][class*="st-key-container_chat_ia st-emotion-cache-1gz5zxc e12zf7d53"] {{  /* CONTAINERS */
-         border-radius: {RADIO}px !important;
-        border: {BORDA}px solid {COR_CAMPO} !important; 
 
+	[data-testid="stElementContainer"][class*="st-key-rolandia12 st-emotion-cache-zh2fnc e12zf7d51"] {{  /* nao  ta usando */
+		border-radius: {RADIO+8}px !important;
+		border: {BORDA}px solid {COR_CAMPO} !important;
+		
+		
     }}
     
 
@@ -223,7 +252,7 @@ def Main_App(st):
         bottom: 4.7% !important;
         padding-left: 20% !important;
         right: 0% !important;
-        z-index: 9999999 !important;
+        z-index: 9999 !important;
         display: flex !important;
         justify-content: space-between !important;
         padding: 0px !important;
@@ -257,13 +286,7 @@ def Main_App(st):
     }}
     </style>
 
-    <div class="footer">
-        <div style="display:flex; align-items:center; gap:16px; font-family:Arial, sans-serif;">
-            <span style="font-weight:600;">📚 {NOME_CUSTOM}</span>
-            <span style="opacity:0.5;"> | </span>
-            <span>🪪 {NOME_USUARIO}</span>{Pasta_Isntal_exec}
-        </div>
-    </div>
+
     """
 
 	st.markdown(page_bg, unsafe_allow_html=True)
@@ -271,6 +294,16 @@ def Main_App(st):
 	def criar_estilos_botao():  # ainda noa usei
 		"""Estilos CSS personalizados"""
 		return f"""
+		
+		    <div class="footer">
+        <div style="display:flex; align-items:center; gap:16px; font-family:Arial, sans-serif;">
+            <span style="font-weight:600;">📚 {NOME_CUSTOM}</span>
+            <span style="opacity:0.5;"> | </span>
+            <span>🪪 {NOME_USUARIO}</span>{Pasta_Isntal_exec}
+        </div>
+    </div>
+    
+    
 	    <style>
 	    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
 

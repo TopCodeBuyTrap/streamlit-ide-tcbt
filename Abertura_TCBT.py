@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from APP_SUB_Janela_Explorer import Janela_PESQUIZA_PASTAS_ARQUIVOS
-from Banco_dados import esc_A_CONTROLE_ABSOLUTO, ler_A_CONTROLE_ABSOLUTO
+from Banco_dados import esc_A_CONTROLE_ABSOLUTO, ler_A_CONTROLE_ABSOLUTO, esc_CUSTOMIZATION
 
 
 def Janela_Lista_Arquivos(st, listar_tipo, caminho_inicial):
@@ -174,6 +174,42 @@ def Abertura():
                         chave_gpt or "",
                         login_gpt or ""
                     )
+                    default_download = os.path.join(os.path.expanduser("~"), "Downloads")
+                    esc_CUSTOMIZATION(
+                        'Padrão',
+                        'HenriqLs',
+                        default_download,
+                        r'.arquivos\logo_.png',
+
+                        'dracula',
+                        15,
+
+                        "chaos",
+                        14,
+
+                        "terminal",
+                        13,
+
+                        '#04061a',
+                        '#24283b',
+                        'JetBrains Mono',
+                        13,
+                        '#0022ff',
+
+                        'Fira Code',
+                        13,
+                        '#A86E04',
+
+                        0,
+                        3,
+
+                        '',
+
+                        '',
+                        '',
+                        '',
+
+                        'ATIVO')
 
                     st.success("✅ **CONFIGURAÇÃO ABSOLUTA SALVA!** 🎉")
                     st.balloons()
