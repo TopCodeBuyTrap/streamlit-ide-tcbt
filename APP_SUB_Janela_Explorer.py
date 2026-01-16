@@ -136,7 +136,140 @@ def Open_Explorer(caminho_arquivo):
     except Exception as e:
         st.error(f"Não foi possível abrir a pasta: {e}")
 
+def Janela_PESQUIZA(st,DIRETORIO):
+    # Inicializa session_state
+    if 'editor_ativo' not in st.session_state:
+        st.session_state.editor_ativo = None
+    if 'expanders_abertos' not in st.session_state:
+        st.session_state.expanders_abertos = []
+    if 'ultimo_caminho' not in st.session_state:
+        st.session_state.ultimo_caminho = None
+    if 'arquivos_por_pasta' not in st.session_state:
+        st.session_state.arquivos_por_pasta = []
+    if 'diretorio_atual' not in st.session_state:
+        st.session_state.diretorio_atual = DIRETORIO
+    if 'aviso_procurar' not in st.session_state:
+        st.session_state.aviso_procurar = ""
 
+    def voltar_pasta():
+        atual = Path(st.session_state.diretorio_atual)
+        if atual.parent != atual:
+            st.session_state.diretorio_atual = str(atual.parent)
+            st.session_state.ultimo_caminho = str(atual.parent)
+            st.session_state.aviso_procurar = ""
+            st.rerun()
+
+    def ir_para_caminho():
+        nome_digitado = st.session_state.procura_nome.strip() if 'procura_nome' in st.session_state else ""
+        if nome_digitado:
+            caminho_completo = os.path.join(st.session_state.diretorio_atual, nome_digitado)
+            if os.path.exists(caminho_completo):
+                st.session_state.aviso_procurar = ""
+                if os.path.isdir(caminho_completo):
+                    st.session_state.diretorio_atual = caminho_completo
+                    st.session_state.ultimo_caminho = caminho_completo
+                else:
+                    st.session_state.ultimo_caminho = caminho_completo
+                st.rerun()
+            else:
+                st.session_state.aviso_procurar = f"❌ '{nome_digitado}' não encontrado!"
+                st.rerun()
+        else:
+            st.session_state.aviso_procurar = "Digite um nome!"
+            st.rerun()
+
+    def on_pasta_change(pasta_id, caminho):
+        if st.session_state[pasta_id]:
+            if pasta_id not in st.session_state.expanders_abertos:
+                st.session_state.expanders_abertos.append(pasta_id)
+            st.session_state.ultimo_caminho = caminho
+            st.session_state.diretorio_atual = caminho
+            st.session_state.aviso_procurar = ""
+        else:
+            if pasta_id in st.session_state.expanders_abertos:
+                st.session_state.expanders_abertos.remove(pasta_id)
+            pasta_pai = Path(caminho).parent
+            st.session_state.ultimo_caminho = str(pasta_pai)
+            st.session_state.diretorio_atual = str(pasta_pai)
+            st.session_state.aviso_procurar = ""
+
+    def on_file_change(chk_id, caminho_item, nome_item, eh_diretorio):
+        for k in st.session_state.arquivos_por_pasta:
+            if k != chk_id:
+                st.session_state[k] = False
+
+        if st.session_state[chk_id]:
+            if chk_id not in st.session_state.arquivos_por_pasta:
+                st.session_state.arquivos_por_pasta.append(chk_id)
+            st.session_state.editor_ativo = nome_item
+            st.session_state.ultimo_caminho = caminho_item
+            st.session_state.aviso_procurar = ""
+        else:
+            pasta_pai = Path(caminho_item).parent
+            st.session_state.ultimo_caminho = str(pasta_pai)
+            st.session_state.aviso_procurar = ""
+
+    def processar_item(nome_item, caminho_item):
+        eh_diretorio = os.path.isdir(caminho_item)
+
+        if eh_diretorio:
+            pasta_id = f"exp_{caminho_item}"
+            st.checkbox(
+                '📁 ' + nome_item,
+                key=pasta_id,
+                value=pasta_id in st.session_state.expanders_abertos,
+                on_change=on_pasta_change,
+                args=(pasta_id, caminho_item)
+            )
+            if st.session_state.get(pasta_id):
+                l, cont = st.columns([0.5, 9])
+                with cont:
+                    conteudo_fresco = listar_arquivos_e_pastas(caminho_item)
+                    for nome_sub, caminho_sub in conteudo_fresco:
+                        processar_item(nome_sub, caminho_sub)
+        else:
+            chk_id = f"chk_{caminho_item}"
+            st.checkbox(
+                nome_item,
+                key=chk_id,
+                on_change=on_file_change,
+                args=(chk_id, caminho_item, nome_item, False)
+            )
+
+    # HEADER
+    st.write(st.session_state.diretorio_atual)
+
+    if st.session_state.aviso_procurar:
+        st.error(st.session_state.aviso_procurar)
+
+    col1, col2, col3 = st.columns([1, 6, 1])
+    with col1:
+        if st.button("🔙", use_container_width=True):
+            voltar_pasta()
+    with col2:
+        st.text_input(
+            'procurar',
+            placeholder="Procurar",
+            label_visibility='collapsed',
+            key="procura_nome"
+        )
+    with col3:
+        if st.button("🔍", use_container_width=True, type="primary"):
+            ir_para_caminho()
+
+    # LISTA PRINCIPAL
+    dir_atual_path = Path(st.session_state.diretorio_atual)
+    lista_atual = listar_arquivos_e_pastas(dir_atual_path)
+
+    with st.container(height=450):
+        for nome_item, caminho_item in lista_atual:
+            processar_item(nome_item, caminho_item)
+
+    if st.session_state.ultimo_caminho:
+        eh_dir = os.path.isdir(st.session_state.ultimo_caminho)
+        tipo = "📁 DIRETÓRIO" if eh_dir else "📄 ARQUIVO"
+        return (st.session_state.ultimo_caminho, tipo)
+    return ("", "")
 
 # ===============================
 # JANELA PRINCIPAL
@@ -344,137 +477,3 @@ def listar_pythons_windows():
         )
     )
 
-def Janela_PESQUIZA_PASTAS_(st):
-    # Inicializa session_state
-    if 'editor_ativo' not in st.session_state:
-        st.session_state.editor_ativo = None
-    if 'expanders_abertos' not in st.session_state:
-        st.session_state.expanders_abertos = []
-    if 'ultimo_caminho' not in st.session_state:
-        st.session_state.ultimo_caminho = None
-    if 'arquivos_por_pasta' not in st.session_state:
-        st.session_state.arquivos_por_pasta = []
-    if 'diretorio_atual' not in st.session_state:
-        st.session_state.diretorio_atual = _DIRETORIO_PROJETOS_()
-    if 'aviso_procurar' not in st.session_state:
-        st.session_state.aviso_procurar = ""
-
-    def voltar_pasta():
-        atual = Path(st.session_state.diretorio_atual)
-        if atual.parent != atual:
-            st.session_state.diretorio_atual = str(atual.parent)
-            st.session_state.ultimo_caminho = str(atual.parent)
-            st.session_state.aviso_procurar = ""
-            st.rerun()
-
-    def ir_para_caminho():
-        nome_digitado = st.session_state.procura_nome.strip() if 'procura_nome' in st.session_state else ""
-        if nome_digitado:
-            caminho_completo = os.path.join(st.session_state.diretorio_atual, nome_digitado)
-            if os.path.exists(caminho_completo):
-                st.session_state.aviso_procurar = ""
-                if os.path.isdir(caminho_completo):
-                    st.session_state.diretorio_atual = caminho_completo
-                    st.session_state.ultimo_caminho = caminho_completo
-                else:
-                    st.session_state.ultimo_caminho = caminho_completo
-                st.rerun()
-            else:
-                st.session_state.aviso_procurar = f"❌ '{nome_digitado}' não encontrado!"
-                st.rerun()
-        else:
-            st.session_state.aviso_procurar = "Digite um nome!"
-            st.rerun()
-
-    def on_pasta_change(pasta_id, caminho):
-        if st.session_state[pasta_id]:
-            if pasta_id not in st.session_state.expanders_abertos:
-                st.session_state.expanders_abertos.append(pasta_id)
-            st.session_state.ultimo_caminho = caminho
-            st.session_state.diretorio_atual = caminho
-            st.session_state.aviso_procurar = ""
-        else:
-            if pasta_id in st.session_state.expanders_abertos:
-                st.session_state.expanders_abertos.remove(pasta_id)
-            pasta_pai = Path(caminho).parent
-            st.session_state.ultimo_caminho = str(pasta_pai)
-            st.session_state.diretorio_atual = str(pasta_pai)
-            st.session_state.aviso_procurar = ""
-
-    def on_file_change(chk_id, caminho_item, nome_item, eh_diretorio):
-        for k in st.session_state.arquivos_por_pasta:
-            if k != chk_id:
-                st.session_state[k] = False
-
-        if st.session_state[chk_id]:
-            if chk_id not in st.session_state.arquivos_por_pasta:
-                st.session_state.arquivos_por_pasta.append(chk_id)
-            st.session_state.editor_ativo = nome_item
-            st.session_state.ultimo_caminho = caminho_item
-            st.session_state.aviso_procurar = ""
-        else:
-            pasta_pai = Path(caminho_item).parent
-            st.session_state.ultimo_caminho = str(pasta_pai)
-            st.session_state.aviso_procurar = ""
-
-    def processar_item(nome_item, caminho_item):
-        eh_diretorio = os.path.isdir(caminho_item)
-
-        if eh_diretorio:
-            pasta_id = f"exp_{caminho_item}"
-            st.checkbox(
-                '📁 ' + nome_item,
-                key=pasta_id,
-                value=pasta_id in st.session_state.expanders_abertos,
-                on_change=on_pasta_change,
-                args=(pasta_id, caminho_item)
-            )
-            if st.session_state.get(pasta_id):
-                l, cont = st.columns([0.5, 9])
-                with cont:
-                    conteudo_fresco = listar_arquivos_e_pastas(caminho_item)
-                    for nome_sub, caminho_sub in conteudo_fresco:
-                        processar_item(nome_sub, caminho_sub)
-        else:
-            chk_id = f"chk_{caminho_item}"
-            st.checkbox(
-                nome_item,
-                key=chk_id,
-                on_change=on_file_change,
-                args=(chk_id, caminho_item, nome_item, False)
-            )
-
-    # HEADER
-    st.write(st.session_state.diretorio_atual)
-
-    if st.session_state.aviso_procurar:
-        st.error(st.session_state.aviso_procurar)
-
-    col1, col2, col3 = st.columns([1, 6, 1])
-    with col1:
-        if st.button("🔙", use_container_width=True):
-            voltar_pasta()
-    with col2:
-        st.text_input(
-            'procurar',
-            placeholder="Procurar",
-            label_visibility='collapsed',
-            key="procura_nome"
-        )
-    with col3:
-        if st.button("🔍", use_container_width=True, type="primary"):
-            ir_para_caminho()
-
-    # LISTA PRINCIPAL
-    dir_atual_path = Path(st.session_state.diretorio_atual)
-    lista_atual = listar_arquivos_e_pastas(dir_atual_path)
-
-    with st.container(height=450):
-        for nome_item, caminho_item in lista_atual:
-            processar_item(nome_item, caminho_item)
-
-    if st.session_state.ultimo_caminho:
-        eh_dir = os.path.isdir(st.session_state.ultimo_caminho)
-        tipo = "📁 DIRETÓRIO" if eh_dir else "📄 ARQUIVO"
-        return (st.session_state.ultimo_caminho, tipo)
-    return ("", "")

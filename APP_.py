@@ -1,3 +1,4 @@
+from textwrap import shorten
 
 from APP_Editor_Run_Preview import Editor_Previews
 from APP_Menus import Apagar_Arq
@@ -7,7 +8,7 @@ from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
 from APP_Sidebar import Sidebar
 
 from Banco_dados import ler_B_ARQUIVOS_RECENTES
-from SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
+from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
 
 import os
 from pathlib import Path
@@ -46,19 +47,22 @@ def Testar_Fluxo_Run(col):
 
 
 def app(col1,col2 ):
-    with col1:
-        from  APP_Menus import Abrir_Menu
-        Abrir_Menu(st)
+
     # Executando a página selecionada
 
     if len(ler_B_ARQUIVOS_RECENTES()) == 0:
+        st.button('Entar')
         from APP_Menus import Cria_Projeto
         footer_container = st.container(border=True)
         with footer_container:
             st.write('Seja Bem Vindo Ordinario/a !')
             st.image(IMAGEM_LOGO)
         Cria_Projeto(st)
+
     else:
+        with col1:
+            from APP_Menus import Abrir_Menu
+            Abrir_Menu(st)
         # ============================================================= MENU SUPERIOR
         with col2.expander("⚙️ Configuração de Layot"):
             m1, m2, m3, m4 = st.columns([3, 4, 3, 3])
@@ -177,9 +181,10 @@ def app(col1,col2 ):
 
                 Arq_Selec = arquivo
 
+        #
         Tab1, Tab2 = st.columns([.4, 9])
-
-        with Tab2.expander("⚙️ Configuração de Layout", expanded=True):
+        val = ''
+        with Tab2.expander(f"{val}:material/terminal_output:",  expanded=False):
             # Chamada principal
             Terminal()
 

@@ -12,7 +12,7 @@ import re
 from APP_Chats_IA import gerar_codigo, CODOLLAMA_CHAT
 from APP_SUB_Funcitons import Anotations_Editor, Marcadores_Editor, wrap_text
 from Banco_dados import ler_CUSTOMIZATION_coluna
-from SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
 
 
 # Funções auxiliares (Certifique-se que estão acessíveis ou no mesmo arquivo)

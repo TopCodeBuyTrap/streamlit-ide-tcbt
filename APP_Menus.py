@@ -3,13 +3,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from APP_SUB_Janela_Explorer import listar_pythons_windows, Apagar_Arquivos, Janela_PESQUIZA_PASTAS_ARQUIVOS
+from APP_SUB_Janela_Explorer import listar_pythons_windows, Apagar_Arquivos, Janela_PESQUIZA_PASTAS_ARQUIVOS, \
+    Janela_PESQUIZA
 from Abertura_TCBT import Janela_Lista_Arquivos
 from Banco_dados import ler_CUSTOMIZATION, ler_cut, ATUAL_CUSTOMIZATION_nome, \
     esc_CONTROLE_ARQUIVOS, Del_CONTROLE_ARQUIVOS, esc_B_ARQUIVOS_RECENTES
-from SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETO_ATUAL_
-
-
+from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETO_ATUAL_, _DIRETORIO_PROJETOS_
 
 # Pega a pasta Downloads do usuário
 default_download = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -467,7 +466,7 @@ def Cria_Arquivos(st):
                     nome_final = nome_arquivo + extensao
                     Caminho_Absoluto = os.path.join(Pasta_RAIZ_projeto, nome_final)
 
-                    from SUB_Controle_Driretorios import Criar_Arquivo_TEXTO
+                    from APP_SUB_Controle_Driretorios import Criar_Arquivo_TEXTO
 
                     Criar_Arquivo_TEXTO(Pasta_RAIZ_projeto, str(nome_arquivo).strip().replace(' ', "_"), "", extensao)
                     #esc_A_CONTROLE_ARQUIVOS(nome_final,Caminho_Absoluto,linguagem,extensao,"","CRIADO")
@@ -486,7 +485,7 @@ def Abrir_Projeto(st):
     @st.dialog("Abrir Projeto/Arquivo", width="500")
     def dialog_content():
         # USO PRINCIPAL ✅ COMPLETO COM ABERTURA
-        RESULTADO = Janela_PESQUIZA(st)
+        RESULTADO = Janela_PESQUIZA(st,_DIRETORIO_PROJETOS_())
 
         if RESULTADO[0]:
             caminho, tipo = RESULTADO
@@ -608,7 +607,7 @@ def Cria_Projeto(st):
         # DADOS DO PROJETO
         # =========================
 
-        caminho_base = st.text_input("**Criar em:**", _DIRETORIO_PROJETO_ATUAL_())
+        caminho_base = st.text_input("**Criar em:**", _DIRETORIO_PROJETOS_())
         nome_projeto = st.text_input("Nome do projeto")
 
         # =========================

@@ -189,7 +189,7 @@ def se_CONTROLE_ARQUIVOS(NOME_ARQUIVO, COLUNA, VALOR=None):  # se True ou False 
 	conn = get_conn()
 	c = conn.cursor()
 	if COLUNA is None and VALOR is None:  # só verificar se o NOME_ARQUIVO existe
-		c.execute("SELECT 1 FROM CONTROLE_ARQUIVOS WHERE NOME_ARQUIVO = ?", (NOME_ARQUIVO,))
+		c.execute("SELECT 1 FROM CONTROLE_ARQUIVOS WHERE CAMINHO_DIRETO = ?", (NOME_ARQUIVO,))
 		ok = c.fetchone() is not None
 		c.close()
 		conn.close()

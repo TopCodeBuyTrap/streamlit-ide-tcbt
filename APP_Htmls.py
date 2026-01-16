@@ -1,4 +1,4 @@
-from SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_
+from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_
 from Banco_dados import ler_CUSTOMIZATION_coluna
 import base64
 import streamlit as st
@@ -209,15 +209,24 @@ def Main_App(st):
         z-index: 9999 !important;
 
     }}
+        div[data-testid="stElementContainer"][class*="st-key-meu_container_unico_Top"] {{  /* CONTAINERS */
+        background-color: {THEMA_APP1} !important;
+        padding: 0 !important;
+        height: 5% !important;
+        z-index: 9999 !important;
+        height: 10px !important;
+
+    }}
+    
 
 
-    div[data-testid="stColumn"][class*="stColumn st-emotion-cache-12nucvt ek2vi382"] {{          /*  TERMINAL  */
+    div[data-testid="stColumn"][class*="stColumn st-emotion-cache-de7oey e12zf7d52"] {{          /*  TERMINAL  */
         background-color: {THEMA_APP2} !important;
         position: fixed !important;
-        bottom: 0 !important;
+        bottom: 4.7% !important;
         padding-left: 20% !important;
         right: 0% !important;
-        z-index: 99999999 !important;
+        z-index: 9999999 !important;
         display: flex !important;
         justify-content: space-between !important;
         padding: 0px !important;

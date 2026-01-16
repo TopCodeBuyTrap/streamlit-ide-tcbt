@@ -61,7 +61,7 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 	# 2. ADICIONA BANCO (SEM DUPLICAR)
 	banco_arquivos = ler_CONTROLE_ARQUIVOS()
 	for nome_arq, caminho, conteudo, ext in banco_arquivos:
-		if se_CONTROLE_ARQUIVOS(nome_arq, None):
+		if se_CONTROLE_ARQUIVOS(caminho, None):
 			# VERIFICA SE JÁ NÃO EXISTE NO PROJETO
 			if not any(nome == nome_arq for nome, _, _ in todos_abertos):
 				todos_abertos.append((nome_arq, caminho, "banco"))
@@ -74,39 +74,29 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 			todos_abertos_unicos.append(item)
 			vistos.add(item[0])
 	todos_abertos = todos_abertos_unicos[::-1]
-	Top_container = col2.container(border=True, key="meu_container_unico_Top")
 
 	# 3. LOOP PRINCIPAL - PROJETO + BANCO
 	Arquivo_Selecionado_Completo = []
 	Arquivo_Selecionado_Nomes = []
 	if todos_abertos:
-		st.markdown("----")
 		for im in range(0, len(todos_abertos), qt_col):
 
-			linha = Top_container.columns(qt_col)
+			linha = st.columns(qt_col)
 			for j, (arquivo, diretorio, origem) in enumerate(todos_abertos[im:im + qt_col]):
-				Arquivo_Selecionado_Completo.append(diretorio)
-				Arquivo_Selecionado_Nomes.append(arquivo)
-				with linha[j]:
 					# Determina estado ativo
-					editor_ativo = st.session_state.editor_ativo_sidebar
-					qual_ativo = 'primary' if editor_ativo == arquivo else 'secondary'
-					emj = '▶️' if editor_ativo == arquivo else ''
-
-					if origem == "banco":
-						col1, col2_btn = st.columns([4, 1])
-						executar = col1.button(
-							f"{emj}{arquivo}",
-							key=f"btn_banco_{arquivo}_{j}",
-							use_container_width=True,
-							type=qual_ativo
-						)
-						Arquivo_Selecionado_Completo.append(diretorio)
-						with col2_btn:
-							if st.button("X", key=f"del_banco_{arquivo}_{j}", type="tertiary"):
-								Del_CONTROLE_ARQUIVOS(arquivo)
-								st.rerun()
+				editor_ativo = st.session_state.editor_ativo_sidebar
+				emj = '▶️' if editor_ativo == arquivo else ''
+				if origem == "banco":
+					if st.button(f"{emj}{arquivo} X",key=f"btn_banco_{arquivo}_{j}",use_container_width=True,type='tertiary'):
+						Del_CONTROLE_ARQUIVOS(arquivo)
+						st.rerun()
+					Arquivo_Selecionado_Completo.append(diretorio)
+					Arquivo_Selecionado_Nomes.append(f'[{arquivo}]')
 
 
+				else:
+					Arquivo_Selecionado_Completo.append(diretorio)
+					Arquivo_Selecionado_Nomes.append(arquivo)
+		st.markdown("----")
 
 	return Arquivo_Selecionado_Nomes, Arquivo_Selecionado_Completo

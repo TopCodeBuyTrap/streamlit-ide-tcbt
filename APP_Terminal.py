@@ -6,7 +6,7 @@ import subprocess
 import threading
 import queue
 
-from SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
 
 def get_prompt():
     try:
@@ -138,7 +138,7 @@ def run_command_async(comando, aba_nome):
     thread.start()
 
 
-@st.fragment(run_every=1.0)
+#@st.fragment(run_every=1.0)
 def RenderTerminalAba(aba_nome):
     if "process_queues" not in st.session_state:
        st.session_state["process_queues"] = {}
