@@ -3,7 +3,7 @@ from textwrap import shorten
 from APP_Editor_Run_Preview import Editor_Previews
 from APP_Menus import Apagar_Arq
 from APP_SUB_Customizar import Customization
-from APP_SUB_Funcitons import Identificar_linguagem
+from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto
 from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
 from APP_Sidebar import Sidebar
 
@@ -62,7 +62,7 @@ def app(col1,col2 ):
     else:
         with col1:
             from APP_Menus import Abrir_Menu
-            Abrir_Menu(st)
+            Abrir_Menu(st,col2)
         # ============================================================= MENU SUPERIOR
         with col2.expander("⚙️ Configuração de Layot"):
             m1, m2, m3, m4 = st.columns([3, 4, 3, 3])
@@ -170,7 +170,7 @@ def app(col1,col2 ):
 
         Arq_Selec = ''
         if len(Arq_Selec_Diretorios) > 0:
-            nomes_abas = [Path(arquivo).name for arquivo in Arq_Selec_Diretorios]  # Só nome final
+            nomes_abas = [arquivo for arquivo in chec_se_arq_do_projeto(Arq_Selec_Diretorios)]  # Só nome final
             tabs = col2.tabs(nomes_abas)
 
             for i, tab in enumerate(tabs):

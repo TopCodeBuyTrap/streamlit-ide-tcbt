@@ -53,7 +53,7 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
                     return
 
                 # Estado interno do Chat (isolado)
-                chat_key = f"chat_{Arq_Selec}"
+                chat_key = f"chat_{Arq_Selec}_{arquivo_id}"
                 if chat_key not in st.session_state:
                     st.session_state[chat_key] = {
                         "resultado": ""
@@ -65,19 +65,19 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
                 prompt_extra = st.text_area(
                     "Instrução adicional (opcional)",
                     placeholder="Ex: Otimize, explique, refatore...",
-                    height=70
+                    height=70,key= f"text_atea{Arq_Selec}_{arquivo_id}"
                 )
 
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    criar = st.button("Criar", use_container_width=True)
+                    criar = st.button("Criar", use_container_width=True,key=f'cria{Arq_Selec}_{arquivo_id}')
 
                 with col2:
-                    ajustar = st.button("Ajustar", use_container_width=True)
+                    ajustar = st.button("Ajustar", use_container_width=True,key=f'Ajustar{Arq_Selec}_{arquivo_id}')
 
                 with col3:
-                    explicar = st.button("Explicar", use_container_width=True)
+                    explicar = st.button("Explicar", use_container_width=True,key=f'Explicar{Arq_Selec}_{arquivo_id}')
 
                 # ---------------- AÇÕES ----------------
                 if criar or ajustar or explicar:

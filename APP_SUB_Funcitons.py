@@ -7,6 +7,8 @@ import re
 from typing import List, Dict, Any, Optional
 
 
+from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+
 
 # ============================================================
 # PARSE AST SEGURO
@@ -192,16 +194,22 @@ def calcular_qualidade(codigo: str) -> Dict[str, Any]:
 
 
 def Identificar_linguagem(arquivo):
-    ext_map = {
-        ".py": "python",
-        ".js": "javascript",
-        ".html": "html",
-        ".css": "css",
-        ".json": "json",
-        ".md": "markdown",
-        ".txt": "plaintext",
-    }
-    return ext_map.get(Path(arquivo).suffix.lower(), "plaintext")
+    EXT_MAP = {
+    ".py": "Python",
+    ".txt": "Texto",
+    ".js": "JavaScript",
+    ".html": "HTML",
+    ".css": "CSS",
+    ".json": "JSON",
+    ".md": "Markdown",
+    ".cpp": "C++",
+    ".java": "Java",
+    ".php": "PHP",
+    ".rb": "Ruby",
+}
+
+    _, ext = os.path.splitext(arquivo)
+    return EXT_MAP.get(ext.lower(), "Desconhecido")
 
 
 def Criar_Arquivo_TEXTO(caminho, titulo, conteudo, ext):
@@ -246,3 +254,121 @@ def gerar_nome_unico(pasta_base: Path, nome_desejado: str) -> Path:
             return novo_caminho
         contador += 1
 
+
+
+from pathlib import Path
+import json
+
+# -------------------------------
+# 1️⃣ Sincroniza estrutura do projeto corretamente
+# -------------------------------
+def sincronizar_estrutura(caminho_arquivo=None):
+    """
+    Varre o projeto em pasta_base e salva JSON dentro de .virtual_tcbt
+    SE caminho_arquivo: PRIMEIRO verifica JSON, SE NÃO acha → varre filesystem
+    """
+    pasta_base = Path(_DIRETORIO_PROJETO_ATUAL_())
+    nome_projeto = pasta_base.name
+    caminho_raiz_absoluto = str(pasta_base)
+    json_dir = pasta_base / ".virtual_tcbt"
+    json_dir.mkdir(parents=True, exist_ok=True)
+    json_path = json_dir / "Arvore_projeto.json"
+
+    # 2️⃣ VARRE FILESYSTEM
+    estrutura = {"pastas": [], "arquivos": []}
+    estrutura["pastas"].append(caminho_raiz_absoluto)
+
+    for root, dirs, files in os.walk(pasta_base):
+        dirs[:] = [d for d in dirs if d != ".virtual_tcbt"]
+        pasta_rel = str(Path(root).relative_to(pasta_base))
+
+        if pasta_rel != "." and pasta_rel not in estrutura["pastas"]:
+            estrutura["pastas"].append(pasta_rel)
+
+        for arquivo in files:
+            caminho_rel = str(Path(root).joinpath(arquivo).relative_to(pasta_base))
+            pasta_completa = str(Path(root).resolve())  # ← COMO VOCÊ QUER
+
+            estrutura["arquivos"].append({
+                "nome": arquivo,
+                "caminho_rel": caminho_rel,
+                "pasta_completa": pasta_completa
+            })
+
+    # 3️⃣ SALVA JSON
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(estrutura, f, indent=2, ensure_ascii=False)
+
+    if caminho_arquivo:
+
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                estrutura = json.load(f)
+
+            # ✅ BUSCA pelo caminho_rel (tolerante a erros)
+            for arq in estrutura["arquivos"]:
+                print(arq["pasta_completa"])
+                if str(arq["pasta_completa"]) in str(caminho_arquivo):
+                    return True
+                else:
+                    return False
+
+        except (json.JSONDecodeError, KeyError):pass
+    return estrutura
+
+from pathlib import Path
+
+def Sinbolos(arquivo):
+    arquivo = Path(arquivo)
+
+    ICONES_EXT = {
+        ".py": "🐍",
+        ".txt": "📄",
+        ".js": "🟨",
+        ".html": "🌐",
+        ".css": "🎨",
+        ".json": "🗂️",
+        ".md": "📝",
+        ".cpp": "⚙️",
+        ".java": "☕",
+        ".php": "🐘",
+        ".rb": "💎"
+    }
+
+    return ICONES_EXT.get(arquivo.suffix.lower(), "📦")
+
+
+def chec_se_arq_do_projeto(Arq_Selec_Diretorios):
+    pasta_base = Path(_DIRETORIO_PROJETO_ATUAL_())
+    nomes_com_path = []
+
+
+
+    for arquivo in Arq_Selec_Diretorios:
+        arquivo = Path(arquivo)
+        icone = Sinbolos(arquivo)
+
+        try:
+            eh_do_projeto = sincronizar_estrutura(str(arquivo)) is True
+        except Exception:
+            eh_do_projeto = False
+
+        if eh_do_projeto:
+            try:
+                caminho_rel = arquivo.relative_to(pasta_base)
+                exibicao = f"{caminho_rel.name}"
+            except Exception:
+                exibicao = f"{arquivo.name}"
+            nomes_com_path.append(f"{icone} {exibicao}")
+        else:
+            exibicao = f"{arquivo.name}/{arquivo.parent.name}"
+            nomes_com_path.append(f"{icone} {exibicao}")
+
+    return nomes_com_path
+
+
+
+
+def escreve(texto):
+    import  streamlit as st
+    return st.write(texto)

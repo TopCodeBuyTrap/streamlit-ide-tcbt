@@ -1,7 +1,7 @@
 import os
 
 from APP_Editor_Run_Preview import Editor_Previews
-from APP_SUB_Funcitons import Identificar_linguagem
+from APP_SUB_Funcitons import Identificar_linguagem, sincronizar_estrutura, Sinbolos
 from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas
 from Banco_dados import ler_CONTROLE_ARQUIVOS, Del_CONTROLE_ARQUIVOS, se_CONTROLE_ARQUIVOS
 
@@ -45,8 +45,8 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 		else:
 			if nome_item not in st.session_state.file_status_sidebar:
 				st.session_state.file_status_sidebar[nome_item] = True
-
-			status = st.checkbox(nome_item, key=f"chk_sidebar_{caminho_item.replace('/', '_').replace('\\', '_')}")
+			em = Sinbolos(nome_item)
+			status = st.checkbox(f'{em} {nome_item}'.replace(f'{em} ',f'{em}'), key=f"chk_sidebar_{caminho_item.replace('/', '_').replace('\\', '_')}")
 			st.session_state.file_status_sidebar[nome_item] = status
 			if status:
 				abertos_locais.append((nome_item, caminho_item, "projeto"))
@@ -61,18 +61,18 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 	# 2. ADICIONA BANCO (SEM DUPLICAR)
 	banco_arquivos = ler_CONTROLE_ARQUIVOS()
 	for nome_arq, caminho, conteudo, ext in banco_arquivos:
-		if se_CONTROLE_ARQUIVOS(caminho, None):
-			# VERIFICA SE JÁ NÃO EXISTE NO PROJETO
-			if not any(nome == nome_arq for nome, _, _ in todos_abertos):
-				todos_abertos.append((nome_arq, caminho, "banco"))
+		if sincronizar_estrutura(caminho) == False:# verifica se o aruivo esta no ".virtual_tcbt" / "Arvore_projeto.json"
+			if se_CONTROLE_ARQUIVOS(caminho, None):
+					todos_abertos.append((nome_arq, caminho, "banco"))
+		else:
+			st.warning(caminho)
 
 	# Remove duplicatas mantendo último (MELHORADO)
 	vistos = set()
 	todos_abertos_unicos = []
 	for item in reversed(todos_abertos):
-		if item[0] not in vistos:
-			todos_abertos_unicos.append(item)
-			vistos.add(item[0])
+		todos_abertos_unicos.append(item)
+		vistos.add(item[0])
 	todos_abertos = todos_abertos_unicos[::-1]
 
 	# 3. LOOP PRINCIPAL - PROJETO + BANCO
@@ -80,23 +80,15 @@ def Sidebar(st, col2, lista_projeto, qt_col):
 	Arquivo_Selecionado_Nomes = []
 	if todos_abertos:
 		for im in range(0, len(todos_abertos), qt_col):
-
-			linha = st.columns(qt_col)
+			st.text('____Arq_Fora___')
 			for j, (arquivo, diretorio, origem) in enumerate(todos_abertos[im:im + qt_col]):
-					# Determina estado ativo
-				editor_ativo = st.session_state.editor_ativo_sidebar
-				emj = '▶️' if editor_ativo == arquivo else ''
+				Arquivo_Selecionado_Completo.append(diretorio)
+				Arquivo_Selecionado_Nomes.append(arquivo)
 				if origem == "banco":
-					if st.button(f"{emj}{arquivo} X",key=f"btn_banco_{arquivo}_{j}",use_container_width=True,type='tertiary'):
+					if st.button(f"{Sinbolos(arquivo)}{arquivo}' X",key=f"btn_banco_{arquivo}_{j}",use_container_width=True,type='tertiary'):
 						Del_CONTROLE_ARQUIVOS(arquivo)
 						st.rerun()
-					Arquivo_Selecionado_Completo.append(diretorio)
-					Arquivo_Selecionado_Nomes.append(f'[{arquivo}]')
 
 
-				else:
-					Arquivo_Selecionado_Completo.append(diretorio)
-					Arquivo_Selecionado_Nomes.append(arquivo)
-		st.markdown("----")
 
 	return Arquivo_Selecionado_Nomes, Arquivo_Selecionado_Completo

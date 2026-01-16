@@ -187,10 +187,10 @@ def Main_App(st):
         margin-top: -10% !important;
         background-color: {COR_CAMPO} !important;
         color: {COR_MENU} !important;
-        position: fixed;
-        width: 10%;
-        right: 45%;
-        z-index: 9999;
+        position: fixed !important;
+        width: 10% !important;
+        right: 45% !important;
+        z-index: 9999 !important;
     }}
     
     [data-testid="stCustomComponentV1"] {{                                      /* EDITORES DE CODIGOS */
@@ -209,12 +209,9 @@ def Main_App(st):
         z-index: 9999 !important;
 
     }}
-        div[data-testid="stElementContainer"][class*="st-key-meu_container_unico_Top"] {{  /* CONTAINERS */
-        background-color: {THEMA_APP1} !important;
-        padding: 0 !important;
-        height: 5% !important;
-        z-index: 9999 !important;
-        height: 10px !important;
+        div[data-testid="stVerticalBlock"][class*="st-key-container_chat_ia st-emotion-cache-1gz5zxc e12zf7d53"] {{  /* CONTAINERS */
+         border-radius: {RADIO}px !important;
+        border: {BORDA}px solid {COR_CAMPO} !important; 
 
     }}
     

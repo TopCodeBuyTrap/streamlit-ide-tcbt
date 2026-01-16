@@ -28,7 +28,7 @@ def init_db():
 
 	# __________________________________________------------------------------>  CONTROLE_ARQUIVOS
 	c.execute('''CREATE TABLE IF NOT EXISTS CONTROLE_ARQUIVOS(
-        NOME_ARQUIVO TEXT PRIMARY KEY NOT NULL,
+        NOME_ARQUIVO TEXT NOT NULL,
         CAMINHO_DIRETO TEXT,
         CONTEUDO_DO_ARQUIVO TEXT,
         EXTENTION TEXT)''')
