@@ -1,13 +1,11 @@
-from textwrap import shorten
-
+from datetime import datetime
 from APP_Editor_Run_Preview import Editor_Previews
 from APP_Menus import Apagar_Arq
 from APP_SUB_Customizar import Customization
-from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto
+from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto, contar_estrutura
 from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
 from APP_Sidebar import Sidebar
 
-from Banco_dados import ler_B_ARQUIVOS_RECENTES
 from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
 
 import os
@@ -47,8 +45,80 @@ def Testar_Fluxo_Run(col):
 
 
 def app(col1,col2 ):
-    # Executando a página selecionada
+    from Banco_dados import ler_A_CONTROLE_PROJETOS, ler_B_ARQUIVOS_RECENTES
+    # USO
+    if st.expander('Viagem Rapída'):
+        def select_arquivo_recente():
 
+            registros = ler_A_CONTROLE_PROJETOS()
+            if not registros:
+                return None, None, None
+
+            # registros =
+            # (DIRETORIO_TRABALHANDO, VERSION, DATA, DIRETORIOS, ARQUIVOS, OBS)
+
+            ordenar_por = st.sidebar.selectbox(
+                "Ordenar por:",
+                ["Último usado", "Data", "Versão", "Ordem alfabética (agrupado)"],
+                key="ordenacao_recente"
+            )
+
+            dados = []
+            for r in registros:
+                caminho, versao, data = r[0], r[1], r[2]
+                dados.append({
+                    "caminho": caminho,
+                    "nome": os.path.basename(caminho),
+                    "versao": versao,
+                    "data": data
+                })
+
+            if ordenar_por == "Último usado":
+                dados = sorted(
+                    dados,
+                    key=lambda x: x["data"] or "",
+                    reverse=True
+                )
+
+            elif ordenar_por == "Data":
+                dados = sorted(
+                    dados,
+                    key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min,
+                    reverse=True
+                )
+
+            elif ordenar_por == "Versão":
+                dados = sorted(
+                    dados,
+                    key=lambda x: (x["versao"] or "").lower()
+                )
+
+            elif ordenar_por == "Ordem alfabética (agrupado)":
+                # agrupa por nome e ordena cada grupo da mais velha para a mais nova
+                grupos = {}
+                for d in dados:
+                    grupos.setdefault(d["nome"], []).append(d)
+
+                dados = []
+                for nome in sorted(grupos.keys(), key=str.lower):
+                    grupo = sorted(
+                        grupos[nome],
+                        key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min
+                    )
+                    dados.extend(grupo)
+
+            selecionado = st.sidebar.selectbox(
+                "Projetos recentes",
+                options=range(len(dados)),
+                format_func=lambda i: dados[i]["nome"],
+                index=0
+            )
+
+            item = dados[selecionado]
+            return item["caminho"], item["versao"], item["data"]
+        caminho, versao, data = select_arquivo_recente()
+
+    st.code(contar_estrutura(caminho))
     if len(ler_B_ARQUIVOS_RECENTES()) == 0:
         st.button('Entar')
         from APP_Menus import Cria_Projeto
@@ -58,13 +128,18 @@ def app(col1,col2 ):
             st.image(IMAGEM_LOGO)
         Cria_Projeto(st)
 
+    elif ler_B_ARQUIVOS_RECENTES(caminho)[0]:
+
+        st.code(ler_B_ARQUIVOS_RECENTES(caminho)[0])
+
+
     else:
         with col1:
             from APP_Menus import Abrir_Menu
             Abrir_Menu(st)
         # ============================================================= MENU SUPERIOR
         with col2.expander("⚙️ Configuração de Layot"):
-            m1, m2, m3, m4 = st.columns([3, 4, 3, 3])
+            m1, m2, m3, m4 = st.columns([4, 4, 3, 3])
             # --------------------------------------------------------- 1️⃣ MULTISELECT
             with m1:
                 containers_order = st.multiselect(
@@ -138,7 +213,7 @@ def app(col1,col2 ):
                 # ===== Layout 4: vertical → sem sliders
                 else:
                     col_weights = None
-            Customization(st, NOME_CUSTOM)
+            Customization(st)
         #--------------------------------------------------------------------- MENUS DE EDIÇÃO E CRIAÇÃO DE ARQUIVOS
         from  APP_Menus import  Abrir_Menu,Custom
         Pasta_Executavel = _DIRETORIO_EXECUTAVEL_()

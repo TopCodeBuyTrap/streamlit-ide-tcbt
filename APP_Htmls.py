@@ -83,7 +83,7 @@ def Main_App(st):
     
     div[data-testid="stButton"] button {{                               /* Botões */
         background-color: {THEMA_APP1} !important;
-        color: {COR_CAMPO} !important;
+        color: {COR_MENU} !important;
         font-size: {TAM_MENU}px !important;
         height: 30px !important;
         padding: 4px 8px !important;
@@ -150,16 +150,36 @@ def Main_App(st):
         width: 105% !important;
         max-width: none !important;
     }}
-
+	
    
     section[data-testid="stSidebar"] {{                              /* SIDEBAR */
         background-color: {SIDEBAR_COR} !important;
         padding-top: -50px !important;
         margin-left: 0 !important;
         height: 95% !important;
+        margin-top: -5% !important;
+        
     }}
 
-    div[data-testid="stVerticalBlock"][class*="st-key-Bra-o_Sidebar"] {{ /* MENU LATERAL DIREITO - AO LADO DO SIDEBAR */
+    [data-testid="stSidebarCollapseButton"] {{                                  /* BOTÃO DO SIDEBAR DE CIMA << */
+		    position: fixed !important;
+		    top: 20% !important;
+		    left: 6px !important;
+		    z-index: 9999 !important;
+		}}
+
+    [data-testid="stExpandSidebarButton"] {{                        /* BOTÃO DO SIDEBAR DE BAIXO << */            
+        background-color: {COR_MENU} !important;
+        top: 1.5% !important;
+        position: fixed !important;
+        left: 3px !important;
+        width: 60px !important;
+        height: 11px !important;
+        
+        z-index: 9999 !important;
+    }}
+
+    div[data-testid="stVerticalBlock"][class*="st-key-Bra-o_Sidebar"] {{ /* MENU de botao POUPAP - AO LADO DO SIDEBAR */
         background-color: {SIDEBAR_COR} !important;
 	    position: absolute !important;
 	    top: 5% !important;  /* Alinha no topo do sidebar */
@@ -171,24 +191,10 @@ def Main_App(st):
 	    transition: transform .001s ease !important; /* Animação suave */
 	}}
 
-
-
 	/* Container principal para posicionamento correto */
 	section[data-testid="stAppViewContainer"] {{
 	    position: relative !important;
 	}}
-
-    
-    [data-testid="stExpandSidebarButton"] {{                                   
-        background-color: {COR_MENU} !important;
-        margin-top: 0% !important;
-        position: fixed !important;
-        left: 3px !important;
-        width: 60px !important;
-        height: 10px !important;
-        
-        z-index: 9999 !important;
-    }}
 
     /* CONTAINERS   stElementContainer 
     div[data-testid="stLayoutWrapper"]{{
@@ -272,10 +278,10 @@ def Main_App(st):
     /* FOOTER */
     .footer {{
         position: fixed !important;
-        bottom: 0 !important;
+        bottom: -1% !important;
         left: 0 !important;
         right: 0 !important;
-        height: 50px !important;
+        height: 20px !important;
         background: {SIDEBAR_COR} !important;
         z-index: 99999999 !important;
         display: flex !important;
@@ -291,17 +297,39 @@ def Main_App(st):
 
 	st.markdown(page_bg, unsafe_allow_html=True)
 
-	def criar_estilos_botao():  # ainda noa usei
-		"""Estilos CSS personalizados"""
-		return f"""
-		
-		    <div class="footer">
+	page_bg = f"""
+	<div class="footer">
         <div style="display:flex; align-items:center; gap:16px; font-family:Arial, sans-serif;">
-            <span style="font-weight:600;">📚 {NOME_CUSTOM}</span>
+            <span style="font-weight:500;">📚 {NOME_CUSTOM}</span>
             <span style="opacity:0.5;"> | </span>
             <span>🪪 {NOME_USUARIO}</span>{Pasta_Isntal_exec}
         </div>
     </div>
+	"""
+
+	st.markdown(page_bg, unsafe_allow_html=True)
+
+	st.markdown("""
+	<style>
+		section[data-testid="stSidebar"] {
+			overflow: hidden;
+		}
+		body {
+			overflow-x: hidden;
+		}
+		.main {
+			overflow-x: hidden;
+		}
+	</style>
+	""", unsafe_allow_html=True)
+
+
+
+	def criar_estilos_botao():  # ainda noa usei
+		"""Estilos CSS personalizados"""
+		return f"""
+		
+		    
     
     
 	    <style>

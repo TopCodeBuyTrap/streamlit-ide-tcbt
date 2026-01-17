@@ -238,7 +238,7 @@ def Janela_PESQUIZA(st,DIRETORIO):
 
     # HEADER
     # ✅ CORRETO
-    st.text_input(label="📁 Diretório Atual", value=st.session_state.diretorio_atual, disabled=True)
+    st.text_input(label="📁 Diretório Atual", value=st.session_state.diretorio_atual)
 
     if st.session_state.aviso_procurar:
         st.error(st.session_state.aviso_procurar)
@@ -250,7 +250,7 @@ def Janela_PESQUIZA(st,DIRETORIO):
     with col2:
         st.text_input(
             'procurar',
-            placeholder="Procurar",
+            placeholder="Procurar Dentro de:",
             label_visibility='collapsed',
             key="procura_nome"
         )

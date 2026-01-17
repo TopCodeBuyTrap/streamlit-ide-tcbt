@@ -10,6 +10,18 @@ from typing import List, Dict, Any, Optional
 from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
 
 
+
+from datetime import datetime
+
+from Banco_dados import ler_B_ARQUIVOS_RECENTES
+
+
+def data_sistema():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+
+
 # ============================================================
 # PARSE AST SEGURO
 # ============================================================
@@ -262,6 +274,143 @@ import json
 # -------------------------------
 # 1️⃣ Sincroniza estrutura do projeto corretamente
 # -------------------------------
+
+from pathlib import Path
+import os
+import os
+import subprocess
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+import os
+import subprocess
+from collections import defaultdict
+from datetime import datetime
+
+def contar_estrutura(caminho_base):
+    caminho_base = Path(caminho_base).resolve()
+
+    nomes_envs = {
+        ".venv",
+        "venv",
+        "env",
+        ".virtual_tcbt",
+        ".tox",
+        ".nox",
+        "__pypackages__"
+    }
+
+    pastas_excluidas = {
+        "__pycache__",
+        ".git",
+        ".idea"
+    }.union(nomes_envs)
+
+    total_pastas = 0
+    total_arquivos = 0
+    arquivos_por_extensao = defaultdict(int)
+    pastas_datas = []
+    python_envs = []
+
+    # ambientes Python
+    for nome_env in nomes_envs:
+        env_path = caminho_base / nome_env
+        if not env_path.exists():
+            continue
+
+        python_exec = env_path / "Scripts" / "python.exe"
+        if not python_exec.exists():
+            python_exec = env_path / "bin" / "python"
+
+        if python_exec.exists():
+            try:
+                versao = subprocess.check_output(
+                    [str(python_exec), "--version"],
+                    stderr=subprocess.STDOUT,
+                    text=True
+                ).strip()
+            except Exception:
+                versao = None
+
+            python_envs.append({
+                versao
+            })
+
+    for root, dirs, files in os.walk(caminho_base):
+        dirs[:] = [d for d in dirs if d not in pastas_excluidas]
+
+        for d in dirs:
+            pasta_path = Path(root) / d
+            st = pasta_path.stat()
+            total_pastas += 1
+
+            pastas_datas.append({
+                "criado": datetime.fromtimestamp(st.st_ctime).strftime("%Y-%m-%d %H:%M:%S"),
+                "modificado": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        for f in files:
+            total_arquivos += 1
+            ext = Path(f).suffix.lower() or "SEM"
+            arquivos_por_extensao[ext] += 1
+
+    return {
+        "pastas": total_pastas,
+        "arquivos": total_arquivos,
+        "extensao": dict(arquivos_por_extensao),
+        "datas": pastas_datas,
+        "versoes": python_envs
+    }
+
+
+from pathlib import Path
+import os
+from collections import defaultdict
+from datetime import datetime
+
+def resumo_pasta(caminho_pasta):
+    caminho_pasta = Path(caminho_pasta).resolve()
+
+    pastas_excluidas = {
+        ".venv",
+        "venv",
+        "env",
+        ".virtual_tcbt",
+        ".tox",
+        ".nox",
+        "__pypackages__",
+        "__pycache__",
+        ".git",
+        ".idea"
+    }
+
+    total_pastas = 0
+    total_arquivos = 0
+    arquivos_por_extensao = defaultdict(int)
+
+    for root, dirs, files in os.walk(caminho_pasta):
+        dirs[:] = [d for d in dirs if d not in pastas_excluidas]
+
+        total_pastas = len(dirs)
+
+        for f in files:
+            total_arquivos += 1
+            ext = Path(f).suffix.lower() or "SEM"
+            arquivos_por_extensao[ext] += 1
+
+        break
+
+    st = caminho_pasta.stat()
+
+    return {
+        "pasta": caminho_pasta.name,
+        "criado": datetime.fromtimestamp(st.st_ctime).strftime("%d/%m/%Y %H:%M"),
+        "modificado": datetime.fromtimestamp(st.st_mtime).strftime("%d/%m/%Y %H:%M"),
+        "subpastas": total_pastas,
+        "arquivos": total_arquivos,
+        "extensoes": dict(arquivos_por_extensao)
+    }
+
 def sincronizar_estrutura(caminho_arquivo=None):
     """
     Varre o projeto em pasta_base e salva JSON dentro de .virtual_tcbt

@@ -7,6 +7,8 @@ import threading
 import queue
 
 from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+from Banco_dados import ler_CUSTOMIZATION_coluna
+
 
 def get_prompt():
     try:
@@ -140,6 +142,8 @@ def run_command_async(comando, aba_nome):
 
 #@st.fragment(run_every=1.0)
 def RenderTerminalAba(aba_nome):
+    TERMINAL_TAM_MENU = ler_CUSTOMIZATION_coluna('TERMINAL_TAM_MENU')
+    THEMA_TERMINAL = ler_CUSTOMIZATION_coluna('THEMA_TERMINAL')
     if "process_queues" not in st.session_state:
        st.session_state["process_queues"] = {}
 
@@ -172,8 +176,9 @@ def RenderTerminalAba(aba_nome):
     conteudo = st_ace(
        value=st.session_state[buff_k],
        language='text',
-       theme="vs-dark",
+       theme=THEMA_TERMINAL,
        height=500,
+        font_size=TERMINAL_TAM_MENU,
        auto_update=True,
        wrap=True,
        show_gutter= False,

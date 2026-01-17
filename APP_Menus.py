@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from APP_SUB_Funcitons import Criar_Arquivo_TEXTO
+from APP_SUB_Funcitons import Criar_Arquivo_TEXTO, data_sistema, resumo_pasta
 from APP_SUB_Janela_Explorer import listar_pythons_windows, Apagar_Arquivos, Janela_PESQUIZA_PASTAS_ARQUIVOS, \
     Janela_PESQUIZA
 from Abertura_TCBT import Janela_Lista_Arquivos
@@ -498,12 +498,18 @@ def Abrir_Projeto(st):
                     st.error(f"❌ Erro ao ler: {e}")
 
         elif tipo == '📁 DIRETÓRIO':
+            r = resumo_pasta(RESULTADO[0])
+            st.code(f'''{r['pasta']}: Pastas: {r['subpastas']} Arquivos {r['arquivos']}
+Criada: {r['criado']} Modificada: {r['modificado']}
+Estesões: {r['extensoes']}''')
+
             if st.button(f"**Abrir Projeto: {nome_arq}**", use_container_width=True):
 
                 try:
                     pasta_pai = Path(caminho).parent
                     st.write(caminho, pasta_pai)
-                    esc_B_ARQUIVOS_RECENTES(str(caminho), pasta_pai)
+                    esc_B_ARQUIVOS_RECENTES(str(caminho), '',data_sistema(),'','', '')
+
 
                     st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
                     st.success(f"✅ Projeto {nome_arq} salvo no banco!")
@@ -515,7 +521,11 @@ def Abrir_Projeto(st):
 
 
 def Abrir_Menu(st):
-    st.write('{TcbT}')
+    if st.button(":material/refresh:",icon='♻️',help='limpar os caches do app'.title()):
+        st.cache_data.clear()
+        st.cache_resource.clear()
+
+
     # Opções
     option_map = {0: ":material/dashboard_customize:",
                   1: ":material/folder_open:",
@@ -543,7 +553,7 @@ def Abrir_Menu(st):
             Cria_Arquivos(st)
 
 
-    if st.button('🎨', key="rolandia12"):
+    if st.button('🎨', key="rolandia12", help='colorir o enfeitar o cábare'.title()):
         Custom(st)
 
 
@@ -570,18 +580,12 @@ def Cria_Projeto(st):
             if nome != "Terminal":
                 st.session_state.abas.remove(nome)
                 st.rerun()
-
-
         # =========================
         # DADOS DO PROJETO
-        # =========================
-
         caminho_base = st.text_input("**Criar em:**", _DIRETORIO_PROJETOS_())
         nome_projeto = st.text_input("Nome do projeto")
-
         # =========================
         # ARQUIVOS INICIAIS
-        # =========================
         with st.expander("📁 Arquivos iniciais do projeto", expanded=True):
 
             if "arquivos_projeto" not in st.session_state:
@@ -662,7 +666,8 @@ def Cria_Projeto(st):
             projeto_path = Path(caminho_base) / nome_projeto.replace(" ", "_")
             venv_path = projeto_path / ".virtual_tcbt"
             python_base = pythons[python_selecionado]
-            esc_B_ARQUIVOS_RECENTES(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado)
+            esc_B_ARQUIVOS_RECENTES(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado,data_sistema(),
+                                    0,0, 'Criado Com TcbT!')
 
             progresso = st.progress(0)
             log_area = st.empty()
@@ -716,6 +721,8 @@ def Cria_Projeto(st):
                 st.success(f"🎉 Projeto criado com sucesso usando {python_selecionado}")
 
                 st.session_state.dialog_criar_projeto = False
+                st.cache_data.clear()
+                st.cache_resource.clear()
                 st.rerun()
             except FileExistsError:
                 log("❌ Erro: o projeto já existe")
@@ -740,5 +747,6 @@ def Apagar_Arq(st,Arq_Selec,nome):
     if st.button(f"**❌ Apagar Sim!**", key=f"{Arq_Selec}_btn_del2", use_container_width=True,type="secondary"):
         Apagar_Arquivos(st, Arq_Selec)
         st.session_state.Apagar_Arquivos = False
+
         st.rerun()
 

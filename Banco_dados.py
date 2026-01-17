@@ -21,6 +21,15 @@ def init_db():
         CHAVE_GPT TEXT,
         LOGUIN_GPT TEXT)''')
 
+	# __________________________________________------------------------------>  A_CONTROLE_PROJETOS
+	c.execute('''CREATE TABLE IF NOT EXISTS A_CONTROLE_PROJETOS(
+	    DIRETORIO_TRABALHANDO TEXT NOT NULL,
+	    VERSION TEXT,
+	    DATA TEXT,
+	    DIRETORIOS INTEGER,
+	    ARQUIVOS INTEGER,
+	    OBS TEXT)''')
+
 	# __________________________________________------------------------------>  B_ARQUIVOS_RECENTES
 	c.execute('''CREATE TABLE IF NOT EXISTS B_ARQUIVOS_RECENTES(
         DIRETORIO_TRABALHANDO TEXT NOT NULL,
@@ -118,6 +127,50 @@ def Del_A_CONTROLE_ABSOLUTO(ID=''):
 			time.sleep(0.1)  # Espera antes de retry
 
 
+
+# =======================================_ A_CONTROLE_PROJETOS
+def esc_A_CONTROLE_PROJETOS(DIRETORIO_TRABALHANDO,VERSION,DATA,DIRETORIOS,ARQUIVOS, OBS):
+	conn = get_conn()
+	c = conn.cursor()
+	c.execute('''INSERT OR REPLACE INTO A_CONTROLE_PROJETOS
+                 (DIRETORIO_TRABALHANDO, VERSION,DATA,DIRETORIOS,ARQUIVOS,OBS)
+                 VALUES (?,?,?,?,?,?)''',
+	          (str(DIRETORIO_TRABALHANDO),VERSION,DATA,DIRETORIOS,ARQUIVOS, str(OBS))
+	          )
+	conn.commit()
+	c.close()
+	conn.close()
+
+def ler_A_CONTROLE_PROJETOS():
+	conn = get_conn()
+	c = conn.cursor()
+	c.execute("SELECT * FROM A_CONTROLE_PROJETOS")
+	result = c.fetchall()
+	c.close()
+	conn.close()
+	return result
+
+
+def Del_A_CONTROLE_PROJETOS(ID=''):
+	max_retries = 3
+	for _ in range(max_retries):
+		try:
+			conn = get_conn()
+			c = conn.cursor()
+			if ID:
+				c.execute("DELETE FROM A_CONTROLE_PROJETOS WHERE DIRETORIO_TRABALHANDO = ?", (ID,))
+			else:
+				c.execute("DELETE FROM A_CONTROLE_PROJETOS")
+			conn.commit()
+			c.close()
+			conn.close()
+			return
+		except sqlite3.OperationalError:
+			c.close()
+			conn.close()
+			time.sleep(0.1)  # Espera antes de retry
+
+
 # =======================================_ B_ARQUIVOS_RECENTES
 def esc_B_ARQUIVOS_RECENTES(DIRETORIO_TRABALHANDO, OBS):
 	conn = get_conn()
@@ -132,14 +185,24 @@ def esc_B_ARQUIVOS_RECENTES(DIRETORIO_TRABALHANDO, OBS):
 	conn.close()
 
 
-def ler_B_ARQUIVOS_RECENTES():
-	conn = get_conn()
-	c = conn.cursor()
-	c.execute("SELECT * FROM B_ARQUIVOS_RECENTES")
-	result = c.fetchall()
-	c.close()
-	conn.close()
-	return result
+def ler_B_ARQUIVOS_RECENTES(caminho =''):
+	if caminho:
+		conn = get_conn()
+		c = conn.cursor()
+		c.execute(f"SELECT OBS FROM B_ARQUIVOS_RECENTES where OBS= '{caminho}' ")
+		result = c.fetchall()
+		c.close()
+		conn.close()
+		return result
+
+	else:
+		conn = get_conn()
+		c = conn.cursor()
+		c.execute("SELECT * FROM B_ARQUIVOS_RECENTES")
+		result = c.fetchall()
+		c.close()
+		conn.close()
+		return result
 
 
 def Del_B_ARQUIVOS_RECENTES(ID=''):
@@ -261,7 +324,6 @@ def ler_CUSTOMIZATION():
 	conn.close()
 	return result
 
-
 def ler_cut(selected_custom):
 	conn = get_conn()
 	c = conn.cursor()
@@ -270,7 +332,6 @@ def ler_cut(selected_custom):
 	c.close()
 	conn.close()
 	return result
-
 
 def se_CUSTOMIZATION(NOME_CUSTOM, COLUNA, VALOR=None):  # se True ou False , vazio ou cheio
 	conn = get_conn()
@@ -291,6 +352,14 @@ def se_CUSTOMIZATION(NOME_CUSTOM, COLUNA, VALOR=None):  # se True ou False , vaz
 	conn.close()
 	return ok
 
+def ler_CUSTOMIZATION_coluna_por_usuario(NOME_CUSTOM, COLUNA):
+	conn = get_conn()
+	c = conn.cursor()
+	c.execute(f"SELECT {COLUNA} FROM CUSTOMIZATION WHERE NOME_CUSTOM = ?", (NOME_CUSTOM,))
+	result = c.fetchone()
+	c.close()
+	conn.close()
+	return result[0] if result else None
 
 def ATUAL_CUSTOM_agora(st, NOME_CUSTOM, COLUNA, CONTEUDO, SOMAR=False):
 	conn = get_conn()
@@ -310,7 +379,6 @@ def ATUAL_CUSTOM_agora(st, NOME_CUSTOM, COLUNA, CONTEUDO, SOMAR=False):
 		tem = se_CUSTOMIZATION(NOME_CUSTOM, 'NOME_CUSTOM', VALOR=None)
 	c.close()
 	conn.close()
-
 
 def ATUAL_CUSTOMIZATION(NOME_CUSTOM, COLUNA, CONTEUDO, SOMAR=False):
 	conn = get_conn()
@@ -332,7 +400,6 @@ def ATUAL_CUSTOMIZATION(NOME_CUSTOM, COLUNA, CONTEUDO, SOMAR=False):
 	c.close()
 	conn.close()
 
-
 def ATUAL_CUSTOMIZATION_nome(NOME_CUSTOM):
 	for i in ler_CUSTOMIZATION():
 		if i[0] == NOME_CUSTOM:
@@ -340,7 +407,6 @@ def ATUAL_CUSTOMIZATION_nome(NOME_CUSTOM):
 		else:
 			ATUAL_CUSTOMIZATION(i[0], 'OBS', 'INATIVO')
 		print(i)
-
 
 def Del_CUSTOMIZATION(ID=''):
 	max_retries = 3
@@ -360,7 +426,6 @@ def Del_CUSTOMIZATION(ID=''):
 			c.close()
 			conn.close()
 			time.sleep(0.1)
-
 
 def ler_CUSTOMIZATION_coluna(COLUNA):
 	conn = get_conn()
