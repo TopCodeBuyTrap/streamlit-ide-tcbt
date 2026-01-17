@@ -3,12 +3,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from APP_SUB_Funcitons import Criar_Arquivo_TEXTO, data_sistema, resumo_pasta
+from APP_SUB_Funcitons import Criar_Arquivo_TEXTO, data_sistema, resumo_pasta, limpar_CASH
 from APP_SUB_Janela_Explorer import listar_pythons_windows, Apagar_Arquivos, Janela_PESQUIZA_PASTAS_ARQUIVOS, \
     Janela_PESQUIZA
 from Abertura_TCBT import Janela_Lista_Arquivos
 from Banco_dados import ler_CUSTOMIZATION, ler_cut, ATUAL_CUSTOMIZATION_nome, \
-    esc_CONTROLE_ARQUIVOS, Del_CONTROLE_ARQUIVOS, esc_B_ARQUIVOS_RECENTES
+    esc_CONTROLE_ARQUIVOS, Del_CONTROLE_ARQUIVOS, esc_B_ARQUIVOS_RECENTES, esc_A_CONTROLE_PROJETOS
 from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETO_ATUAL_, _DIRETORIO_PROJETOS_
 
 # Pega a pasta Downloads do usuário
@@ -508,7 +508,7 @@ Estesões: {r['extensoes']}''')
                 try:
                     pasta_pai = Path(caminho).parent
                     st.write(caminho, pasta_pai)
-                    esc_B_ARQUIVOS_RECENTES(str(caminho), '',data_sistema(),'','', '')
+                    esc_A_CONTROLE_PROJETOS(str(caminho), '',data_sistema(),'','', '')
 
 
                     st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
@@ -521,9 +521,10 @@ Estesões: {r['extensoes']}''')
 
 
 def Abrir_Menu(st):
+    #st.link_button(label="",url="https://www.youtube.com/@topcodebuytrap",icon=":material/link:",icon_position="left")
+
     if st.button(":material/refresh:",icon='♻️',help='limpar os caches do app'.title()):
-        st.cache_data.clear()
-        st.cache_resource.clear()
+        limpar_CASH()
 
 
     # Opções
@@ -666,7 +667,7 @@ def Cria_Projeto(st):
             projeto_path = Path(caminho_base) / nome_projeto.replace(" ", "_")
             venv_path = projeto_path / ".virtual_tcbt"
             python_base = pythons[python_selecionado]
-            esc_B_ARQUIVOS_RECENTES(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado,data_sistema(),
+            esc_A_CONTROLE_PROJETOS(Path(caminho_base) / nome_projeto.replace(" ", "_"),python_selecionado,data_sistema(),
                                     0,0, 'Criado Com TcbT!')
 
             progresso = st.progress(0)

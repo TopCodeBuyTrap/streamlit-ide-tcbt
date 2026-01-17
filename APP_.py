@@ -5,7 +5,8 @@ from APP_SUB_Customizar import Customization
 from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto, contar_estrutura
 from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
 from APP_Sidebar import Sidebar
-
+from Banco_dados import ler_A_CONTROLE_PROJETOS, ler_B_ARQUIVOS_RECENTES, ATUAL_B_ARQUIVOS_RECENTES, \
+    se_B_ARQUIVOS_RECENTES, esc_B_ARQUIVOS_RECENTES, Del_B_ARQUIVOS_RECENTES
 from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
 
 import os
@@ -42,83 +43,99 @@ def Testar_Fluxo_Run(col):
 
     col.write(f"Fluxo passou: {t['reruns']}\tTempo: {tempo_total:.3f}")
 
+def select_arquivo_recente(col2):
+    st.sidebar.image('.arquivos/logo_.png')
+    registros = ler_A_CONTROLE_PROJETOS()
+    if not registros:
+        return None, None, None
+
+    # registros =
+    # (DIRETORIO_TRABALHANDO, VERSION, DATA, DIRETORIOS, ARQUIVOS, OBS)
+    with st.sidebar.expander('Viajem Rápida:'):
+        ordenar_por = st.selectbox(
+            "Ordenar por:",
+            ["Último usado", "Data", "Versão", "Ordem alfabética (agrupado)"],
+            key="ordenacao_recente",label_visibility='collapsed'
+        )
+
+        dados = []
+        for r in registros:
+            caminho, versao, data = r[0], r[1], r[2]
+            dados.append({
+                "caminho": caminho,
+                "nome": os.path.basename(caminho),
+                "versao": versao,
+                "data": data
+            })
+
+        if ordenar_por == "Último usado":
+            dados = sorted(
+                dados,
+                key=lambda x: x["data"] or "",
+                reverse=True
+            )
+
+        elif ordenar_por == "Data":
+            dados = sorted(
+                dados,
+                key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min,
+                reverse=True
+            )
+
+        elif ordenar_por == "Versão":
+            dados = sorted(
+                dados,
+                key=lambda x: (x["versao"] or "").lower()
+            )
+
+        elif ordenar_por == "Ordem alfabética (agrupado)":
+            grupos = {}
+            for d in dados:
+                grupos.setdefault(d["nome"], []).append(d)
+
+            dados = []
+            for nome in sorted(grupos.keys(), key=str.lower):
+                grupo = sorted(
+                    grupos[nome],
+                    key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min
+                )
+                dados.extend(grupo)
+
+        if "projeto_idx" not in st.session_state:
+            st.session_state.projeto_idx = 0
+            col2.write("LOG: seleção inicial definida")
+
+        selecionado = st.selectbox(
+            "Projetos recentes",
+            options=range(len(dados)),
+            format_func=lambda i: dados[i]["nome"],
+            key="projeto_idx",label_visibility='collapsed'
+        )
+
+        if "ultimo_idx" not in st.session_state:
+            st.session_state.ultimo_idx = selecionado
+
+        if selecionado != st.session_state.ultimo_idx:
+            col2.write("LOG: projeto trocado")
+            st.session_state.ultimo_idx = selecionado
+
+        item = dados[selecionado]
+
+        return item["caminho"], item["versao"], item["data"]
+
 
 
 def app(col1,col2 ):
-    from Banco_dados import ler_A_CONTROLE_PROJETOS, ler_B_ARQUIVOS_RECENTES
+
+    LOG = []
     # USO
-    if st.expander('Viagem Rapída'):
-        def select_arquivo_recente():
+    caminho, versao, data = select_arquivo_recente(col2)
+    if se_B_ARQUIVOS_RECENTES(caminho) == False:
+        Del_B_ARQUIVOS_RECENTES()
+        esc_B_ARQUIVOS_RECENTES(Path(caminho), str(contar_estrutura(caminho)))
+        LOG.append(f'Escaneando a Estrutura da Pasta e Arquivos!')
 
-            registros = ler_A_CONTROLE_PROJETOS()
-            if not registros:
-                return None, None, None
-
-            # registros =
-            # (DIRETORIO_TRABALHANDO, VERSION, DATA, DIRETORIOS, ARQUIVOS, OBS)
-
-            ordenar_por = st.sidebar.selectbox(
-                "Ordenar por:",
-                ["Último usado", "Data", "Versão", "Ordem alfabética (agrupado)"],
-                key="ordenacao_recente"
-            )
-
-            dados = []
-            for r in registros:
-                caminho, versao, data = r[0], r[1], r[2]
-                dados.append({
-                    "caminho": caminho,
-                    "nome": os.path.basename(caminho),
-                    "versao": versao,
-                    "data": data
-                })
-
-            if ordenar_por == "Último usado":
-                dados = sorted(
-                    dados,
-                    key=lambda x: x["data"] or "",
-                    reverse=True
-                )
-
-            elif ordenar_por == "Data":
-                dados = sorted(
-                    dados,
-                    key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min,
-                    reverse=True
-                )
-
-            elif ordenar_por == "Versão":
-                dados = sorted(
-                    dados,
-                    key=lambda x: (x["versao"] or "").lower()
-                )
-
-            elif ordenar_por == "Ordem alfabética (agrupado)":
-                # agrupa por nome e ordena cada grupo da mais velha para a mais nova
-                grupos = {}
-                for d in dados:
-                    grupos.setdefault(d["nome"], []).append(d)
-
-                dados = []
-                for nome in sorted(grupos.keys(), key=str.lower):
-                    grupo = sorted(
-                        grupos[nome],
-                        key=lambda x: datetime.fromisoformat(x["data"]) if x["data"] else datetime.min
-                    )
-                    dados.extend(grupo)
-
-            selecionado = st.sidebar.selectbox(
-                "Projetos recentes",
-                options=range(len(dados)),
-                format_func=lambda i: dados[i]["nome"],
-                index=0
-            )
-
-            item = dados[selecionado]
-            return item["caminho"], item["versao"], item["data"]
-        caminho, versao, data = select_arquivo_recente()
-
-    st.code(contar_estrutura(caminho))
+    #st.code()
     if len(ler_B_ARQUIVOS_RECENTES()) == 0:
         st.button('Entar')
         from APP_Menus import Cria_Projeto
@@ -127,11 +144,6 @@ def app(col1,col2 ):
             st.write('Seja Bem Vindo Ordinario/a !')
             st.image(IMAGEM_LOGO)
         Cria_Projeto(st)
-
-    elif ler_B_ARQUIVOS_RECENTES(caminho)[0]:
-
-        st.code(ler_B_ARQUIVOS_RECENTES(caminho)[0])
-
 
     else:
         with col1:
@@ -213,20 +225,20 @@ def app(col1,col2 ):
                 # ===== Layout 4: vertical → sem sliders
                 else:
                     col_weights = None
-            Customization(st)
+            Customization(st,NOME_CUSTOM)
         #--------------------------------------------------------------------- MENUS DE EDIÇÃO E CRIAÇÃO DE ARQUIVOS
         from  APP_Menus import  Abrir_Menu,Custom
         Pasta_Executavel = _DIRETORIO_EXECUTAVEL_()
 
         Pasta_Todos_Projetos = _DIRETORIO_PROJETOS_()
-        Pasta_Projeto_Atual = _DIRETORIO_PROJETO_ATUAL_()
+        Pasta_Projeto_Atual = caminho
         Meus_Arquivos = listar_arquivos_e_pastas(Pasta_Projeto_Atual)
         T1, T2 = st.columns([.4, 9])
 
 
         #------------------z--------------------------------------------------- SIDIBAR LATERAL
         with st.sidebar:
-            st.image(IMAGEM_LOGO)
+
 
             caminho_completo = Pasta_Projeto_Atual  # Ex: "C:\\Users\\henri\\PycharmProjects\\IDE_TOP"
             unidade = os.path.splitdrive(caminho_completo)[0]  # Ex: "C:"
@@ -294,7 +306,7 @@ if __name__ == "__main__":
     # 🔹 SE JÁ TEM CONFIG → ENTRA DIRETO NA IDE
     if len(ler_A_CONTROLE_ABSOLUTO()) > 0 or st.session_state.config_absoluta_ok:
         from APP_Htmls import Main_App
-        IMAGEM_LOGO ,NOME_CUSTOM, COR_CAMPO,COR_MENU = Main_App(st)
+        IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU = Main_App(st)
         col1,col2 = st.columns([.3,9])
 
 

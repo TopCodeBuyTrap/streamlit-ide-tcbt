@@ -18,6 +18,7 @@ def _DIRETORIO_PROJETOS_():
     Pasta_Projetos = Path(ler_A_CONTROLE_ABSOLUTO()[0][1]).resolve()  # Caminho absoluto do arquivo atual   HENRIQUE TROCAR ISSO DEPOIS
     return Pasta_Projetos
 
+
 def _DIRETORIO_PROJETO_ATUAL_():
     from Banco_dados import ler_B_ARQUIVOS_RECENTES
     try: #  Então esse TRY é só para isso. É só para quando ele abrir a segunda tela depois da abertura, né? Aquela que abre o pop-up para para ele criar um novo projeto e mudar ele.

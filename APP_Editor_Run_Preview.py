@@ -185,14 +185,13 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
         if name == "Editor":
             THEMA_EDITOR = ler_CUSTOMIZATION_coluna('THEMA_EDITOR')
             EDITOR_TAM_MENU = ler_CUSTOMIZATION_coluna('EDITOR_TAM_MENU')
-            st.write(THEMA_EDITOR)
             Editor_Codigo = st_ace(
                 value=state['code'],
                 theme=THEMA_EDITOR,
                 language=linguagem,
                 height=height,
                 font_size=EDITOR_TAM_MENU,
-                auto_update=False,
+                auto_update=True,
                 wrap=True,
                 annotations=Anotations_Editor(state['code']),
                 markers=Marcadores_Editor(state['code']),

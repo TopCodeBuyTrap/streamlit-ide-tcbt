@@ -1,5 +1,6 @@
 from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_
-from Banco_dados import ler_CUSTOMIZATION_coluna
+from APP_SUB_Funcitons import saudacao_por_hora_sistema
+from Banco_dados import ler_CUSTOMIZATION_coluna, ler_B_ARQUIVOS_RECENTES
 import base64
 import streamlit as st
 import os
@@ -9,7 +10,7 @@ def Main_App(st):
 	# ✅ CORREÇÃO 1: Chama funções ANTES de usar variáveis
 	Pasta_Isntal_exec = _DIRETORIO_EXECUTAVEL_()
 	Pasta_RAIZ_projeto = _DIRETORIO_PROJETOS_()
-
+	Estrutura_projeto = ler_B_ARQUIVOS_RECENTES()[0][1]
 	# --------------------------------------------------------------------- CARREGAMENTO DE CUSTOMIZAÇÃO
 	NOME_CUSTOM = ler_CUSTOMIZATION_coluna('NOME_CUSTOM')
 	NOME_USUARIO = ler_CUSTOMIZATION_coluna('NOME_USUARIO')
@@ -33,10 +34,8 @@ def Main_App(st):
 	DECORA = ler_CUSTOMIZATION_coluna('DECORA')
 	OPC1 = ler_CUSTOMIZATION_coluna('OPC1')
 	OPC2 = ler_CUSTOMIZATION_coluna('OPC2')
-	OPC3 = ler_CUSTOMIZATION_coluna('OPC3')
+	OPC3 = ler_CUSTOMIZATION_coluna('OPC3') # COLOQUEI AQUI IMAGEM CONFIG
 	OBS = ler_CUSTOMIZATION_coluna('OBS')
-
-	SIDEBAR_COR = THEMA_APP1
 
 	# ✅ FUNÇÕES AUXILIARES (antes do CSS)
 	def img_to_base64(img_path):
@@ -46,17 +45,45 @@ def Main_App(st):
 		except:
 			return ""  # Fallback se imagem não existir
 
-	def hex_to_rgba(hex_color, alpha=0.25):
+	def hex_to_rgba_inverso(hex_color: str, intensidade):
 		try:
-			hex_color = hex_color.lstrip("#")
-			r = int(hex_color[0:2], 16)
-			g = int(hex_color[2:4], 16)
-			b = int(hex_color[4:6], 16)
-			return f"rgba({r}, {g}, {b}, {alpha})"
+			intensidade = float(intensidade) / 100  # 0–1
 		except:
-			return "rgba(0,0,0,0.25)"
+			intensidade = 0.3
 
+		# INVERTE A OPACIDADE
+		alpha = 1.0 - intensidade
+		alpha = max(0.0, min(alpha, 1.0))
+
+		hex_color = hex_color.lstrip("#")
+		r = int(hex_color[0:2], 16)
+		g = int(hex_color[2:4], 16)
+		b = int(hex_color[4:6], 16)
+
+		return f"rgba({r},{g},{b},{alpha})"
 	LOGO_BASE64 = img_to_base64(IMAGEM_LOGO)
+
+	# cor base + opacidade vinda do OPC3
+	try:
+		COR_OVERLAY = hex_to_rgba_inverso(THEMA_APP2, float(OPC3))
+
+		if OPC3 != "":
+			BG_STYLE = f'''
+		    background:
+		        linear-gradient({COR_OVERLAY}, {COR_OVERLAY}),
+		        url("data:image/png;base64,{LOGO_BASE64}") !important;
+		        background-repeat: no-repeat !important;
+			    background-position: center center !important;
+			    background-size: cover !important;
+		    '''
+		else:
+			BG_STYLE = f'''
+		    background-color: {THEMA_APP2} !important;
+		    '''
+	except ValueError :
+		BG_STYLE = f'''
+				    background-color: {THEMA_APP2} !important;
+				    '''
 
 	# ✅ CSS CORRIGIDO (sintaxe válida)
 	page_bg = f"""
@@ -92,7 +119,7 @@ def Main_App(st):
         border-radius: {RADIO}px !important;
     }}
 
-    /* Radio e Slider */
+                                                                    /* Radio e Slider */
     [data-testid="stRadio"] p,
     [data-testid="stSlider"] p {{
         color: {COR_MENU} !important;
@@ -132,39 +159,41 @@ def Main_App(st):
         left:auto !important;
         width: 15% !important;
          /* BACKGROUND TRANSPARENTE */
-    background: transparent !important;
-    background-color: transparent !important;
-    
-    /* Borda transparente também */
-    border: none !important;
-    box-shadow: none !important;
+	    background: transparent !important;
+	    background-color: transparent !important;
+	    
+	    /* Borda transparente também */
+	    border: none !important;
+	    box-shadow: none !important;
     }}
 
-    /* BLOCO PRINCIPAL */
-    .block-container {{
-        background-color: {THEMA_APP2} !important;
-        margin-top: -99px !important;
+    
+    .block-container {{                                             /* BLOCO PRINCIPAL BODY*/
+        margin-top: -7.5% !important;
         margin-left: 0px !important;
         padding-left: 3% !important;
         margin-right: 0px !important;
         width: 105% !important;
         max-width: none !important;
+        {BG_STYLE}
+    
+
     }}
 	
    
     section[data-testid="stSidebar"] {{                              /* SIDEBAR */
-        background-color: {SIDEBAR_COR} !important;
-        padding-top: -50px !important;
+        background-color: {THEMA_APP1} !important;
         margin-left: 0 !important;
-        height: 95% !important;
-        margin-top: -5% !important;
+        height: 110% !important;
+        margin-top: -3% !important;
         
     }}
 
     [data-testid="stSidebarCollapseButton"] {{                                  /* BOTÃO DO SIDEBAR DE CIMA << */
 		    position: fixed !important;
-		    top: 20% !important;
-		    left: 6px !important;
+		    background-color: {THEMA_APP1} !important;
+		    top: 5% !important;
+		    left: 8% !important;
 		    z-index: 9999 !important;
 		}}
 
@@ -180,7 +209,7 @@ def Main_App(st):
     }}
 
     div[data-testid="stVerticalBlock"][class*="st-key-Bra-o_Sidebar"] {{ /* MENU de botao POUPAP - AO LADO DO SIDEBAR */
-        background-color: {SIDEBAR_COR} !important;
+        background-color: {THEMA_APP1} !important;
 	    position: absolute !important;
 	    top: 5% !important;  /* Alinha no topo do sidebar */
 		left: 10% !important;
@@ -211,7 +240,7 @@ def Main_App(st):
 
     }}
       [data-testid="stBaseButton-secondary"]:has(kbd[aria-label="Shortcut Ctrl + Enter"]){{/* BOTAO RUN */
-        margin-top: -10% !important;
+        margin-top: -11.05% !important;
         background-color: {COR_CAMPO} !important;
         color: {COR_MENU} !important;
         position: fixed !important;
@@ -235,7 +264,6 @@ def Main_App(st):
 
     }}
 
-
 	    div[data-testid="stButton"][class*="st-key-nome_da_sua_key"] {{             /* CONTAINERS */
         background-color: {THEMA_APP1} !important;
         padding: 0 !important;
@@ -247,15 +275,13 @@ def Main_App(st):
 		border-radius: {RADIO+8}px !important;
 		border: {BORDA}px solid {COR_CAMPO} !important;
 		
-		
     }}
     
-
 
     div[data-testid="stColumn"][class*="stColumn st-emotion-cache-de7oey e12zf7d52"] {{          /*  TERMINAL  */
         background-color: {THEMA_APP2} !important;
         position: fixed !important;
-        bottom: 4.7% !important;
+        bottom: 1.7% !important;
         padding-left: 20% !important;
         right: 0% !important;
         z-index: 9999 !important;
@@ -266,30 +292,14 @@ def Main_App(st):
         
     }}
 
-    /* CHECKBOX */
+                                                                                /* CHECKBOX */
     [data-testid="stCheckbox"] div {{
         color:  !important;
         text-decoration: underline !important;
-        background: {SIDEBAR_COR} !important;
         
         padding: 1px !important;
     }}
 
-    /* FOOTER */
-    .footer {{
-        position: fixed !important;
-        bottom: -1% !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 20px !important;
-        background: {SIDEBAR_COR} !important;
-        z-index: 99999999 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 20px !important;
-        color: white !important;
-    }}
     </style>
 
 
@@ -297,14 +307,86 @@ def Main_App(st):
 
 	st.markdown(page_bg, unsafe_allow_html=True)
 
+	import ast
+
+	import ast
+
+	def resumo_dict_para_html(dados_str: str) -> str:
+		dados = ast.literal_eval(dados_str)
+
+		pastas = dados.get("pastas", 0)
+		arquivos = dados.get("arquivos", 0)
+
+		extensoes = dados.get("extensao", {})
+		extensoes_str = " / ".join(f"{v}{k}" for k, v in extensoes.items())
+
+		datas = dados.get("datas", [])
+		if datas:
+			criado = datas[0].get("criado", "-")
+			modificado = datas[0].get("modificado", "-")
+		else:
+			criado = "-"
+			modificado = "-"
+
+		versoes = dados.get("versoes", [])
+		versoes_str = " / ".join(
+			", ".join(v) if isinstance(v, (set, list, tuple)) else str(v)
+			for v in versoes
+		)
+
+		return f"""
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">📚 Olá {saudacao_por_hora_sistema()} </span>
+	<span>{NOME_USUARIO} !</span>
+
+	<span style="opacity:0.5;"> | </span>
+
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Sua custom atual:</span>
+	<span style="font-weight:500;"> {NOME_CUSTOM} </span>
+	<span style="margin-left:8px; color:{COR_MENU}; font-weight:700; opacity:0.85;"> e você tem nesse Projeto:</span>
+
+	<span style="margin-left:8px;">{pastas}</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Pastas</span>
+
+	<span style="margin-left:8px;">{arquivos}</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Arquivos</span>
+
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Extensões:</span>
+	<span style="margin-left:4px;">{extensoes_str}</span>
+	<span style="opacity:0.5;"> | </span>
+
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Criado:</span>
+	<span style="margin-left:4px;">{criado}</span>
+
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Modificado:</span>
+	<span style="margin-left:4px;">{modificado}</span>
+	<span style="opacity:0.5;"> | </span>
+
+	<span style="color:{COR_CAMPO}; margin-left:8px;">{versoes_str}</span>
+	"""
+
 	page_bg = f"""
+	<style>
+	.footer {{
+	    position: fixed !important;
+	    bottom: -2% !important;
+	    left: 0 !important;
+	    right: 0 !important;
+	    height: 20px !important;
+	    background: {THEMA_APP1} !important;
+	    z-index: 99999999 !important;
+	    display: flex !important;
+	    align-items: center !important;
+	    gap: 14px !important;
+	    padding: 20px !important;
+	    color: white !important;
+	    font-size: 13px !important;
+	    white-space: nowrap !important;
+	}}
+	</style>
+
 	<div class="footer">
-        <div style="display:flex; align-items:center; gap:16px; font-family:Arial, sans-serif;">
-            <span style="font-weight:500;">📚 {NOME_CUSTOM}</span>
-            <span style="opacity:0.5;"> | </span>
-            <span>🪪 {NOME_USUARIO}</span>{Pasta_Isntal_exec}
-        </div>
-    </div>
+	{resumo_dict_para_html(Estrutura_projeto)}
+	</div>
 	"""
 
 	st.markdown(page_bg, unsafe_allow_html=True)
@@ -323,7 +405,18 @@ def Main_App(st):
 	</style>
 	""", unsafe_allow_html=True)
 
-
+	st.markdown("""
+	<style>
+	/* ELIMINA 100% FLICKERING ACE + RERUN */
+	.stAceEditor { transition: none !important; }
+	.st-emotion-cache-1r62ssa { transition: none !important; }
+	div[data-testid="column"] div div [data-baseweb="textarea"] { 
+	    animation: none !important; 
+	}
+	/* Estabiliza render durante updates */
+	[data-testid="stHorizontalBlock"] { min-height: 500px !important; }
+	</style>
+	""", unsafe_allow_html=True)
 
 	def criar_estilos_botao():  # ainda noa usei
 		"""Estilos CSS personalizados"""
@@ -357,6 +450,6 @@ def Main_App(st):
 	    </style>
 	    """
 
-	return IMAGEM_LOGO, NOME_CUSTOM, COR_CAMPO, COR_MENU
+	return IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU
 
 # ✅ IMPORTS NO TOPO (CORRIGIDO)

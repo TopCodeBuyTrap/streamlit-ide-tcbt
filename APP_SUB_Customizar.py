@@ -2,6 +2,7 @@
 
 import os
 
+from APP_SUB_Funcitons import limpar_CASH
 
 # Pega a pasta Downloads do usuário
 default_download = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -60,7 +61,7 @@ TEMAS_ESCUROS = [
 TEMAS_MONACO = ["vs-dark", "vs-light", "hc-black", "hc-light", "Sistema"]
 
 
-def Customization(st):
+def Customization(st,NOME_CUSTOM):
 	from Banco_dados import (
 		ler_CUSTOMIZATION,
 		ler_CUSTOMIZATION_coluna_por_usuario,
@@ -72,14 +73,14 @@ def Customization(st):
 	usuarios_raw = ler_CUSTOMIZATION()
 
 	st1, st2 = st.columns([1, 9])
-	usuarios = [row[0] for row in usuarios_raw if row[0] != "Padrão"]  # Remove Padrão
+	usuarios = [NOME_CUSTOM] + [row[0] for row in usuarios_raw if row[0] != "Padrão"]  # Remove Padrão
 	usuarios =  usuarios  # Coloca Padrão primeiro mas NÃO mostra
 
 	# Começa com "Padrão" selecionado (index=0)
 	usuario = st1.selectbox("👤 Usuário:", usuarios, index=0, key='usuario_select')
 
 	# Remove o st.stop() - deixa continuar sempre
-	st1.success(f"✏️ Editando: **{usuario}**")
+	st1.success(f"✏️ **{usuario}**")
 
 	# Resto do código continua normalmente...
 
@@ -158,44 +159,50 @@ def Customization(st):
 
 	# ---------------- TAB 4: CORES APP
 	with tab4:
-		col_app1, col_app2 = st.columns(2)
+		col_app1, col_app2, col_app3, col_app4 = st.columns(4)
 		THEMA_APP1 = col_app1.color_picker("Sidebar / Foot", THEMA_APP1, key=f'app1_{usuario}')
 		THEMA_APP2 = col_app2.color_picker("Corpo", THEMA_APP2, key=f'app2_{usuario}')
+		col_app3.write('Adiconar Imagem:')
+		IMG = col_app3.checkbox("Ao Body", key=f'IMA_{usuario}')
+		if IMG:
+			ESCURECER_IMAGEM = col_app4.selectbox("Escurecer", [0,3,5,7,10,20,30,40,50,60,70,80,90],
+		                               key=f'IMA_2{usuario}')
+		else:
+			ATUAL_CUSTOM_agora(st, usuario, 'OPC3', '')
 
 	# ---------------- BOTÃO APLICAR (final das tabs)
-	col_btn1, col_btn2 = st.columns([3, 1])
-	with col_btn1:
-		if st.button("💾 SALVAR TUDO", type="primary", use_container_width=True):
-			# Layout
-			ATUAL_CUSTOM_agora(st, usuario, 'EDITOR_TAM_MENU', Tam_Font)
-			ATUAL_CUSTOM_agora(st, usuario, 'PREVIEW_TAM_MENU', Tam_Run)
-			ATUAL_CUSTOM_agora(st, usuario, 'TERMINAL_TAM_MENU', Tam_Term)
-			ATUAL_CUSTOM_agora(st, usuario, 'RADIAL', Radio)
-			ATUAL_CUSTOM_agora(st, usuario, 'BORDA', Borda)
+	if st.button("💾 SALVAR TUDO", type="primary", use_container_width=True):
+		# Layout
+		ATUAL_CUSTOM_agora(st, usuario, 'EDITOR_TAM_MENU', Tam_Font)
+		ATUAL_CUSTOM_agora(st, usuario, 'PREVIEW_TAM_MENU', Tam_Run)
+		ATUAL_CUSTOM_agora(st, usuario, 'TERMINAL_TAM_MENU', Tam_Term)
+		ATUAL_CUSTOM_agora(st, usuario, 'RADIAL', Radio)
+		ATUAL_CUSTOM_agora(st, usuario, 'BORDA', Borda)
 
-			# Fontes Menu
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_MENU', Fonte_Menu)
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_TAM_MENU', Fonte_Tam_Menu)
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_COR_MENU', Fonte_Cor_Menu)
+		# Fontes Menu
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_MENU', Fonte_Menu)
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_TAM_MENU', Fonte_Tam_Menu)
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_COR_MENU', Fonte_Cor_Menu)
 
-			# Fontes Campo
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_CAMPO', Fonte_Campo)
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_TAM_CAMPO', Fonte_Tam_Campo)
-			ATUAL_CUSTOM_agora(st, usuario, 'FONTE_COR_CAMPO', Fonte_Cor_Campo)
+		# Fontes Campo
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_CAMPO', Fonte_Campo)
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_TAM_CAMPO', Fonte_Tam_Campo)
+		ATUAL_CUSTOM_agora(st, usuario, 'FONTE_COR_CAMPO', Fonte_Cor_Campo)
 
-			# Temas
-			ATUAL_CUSTOM_agora(st, usuario, 'THEMA_EDITOR', Tema_Editor)
-			ATUAL_CUSTOM_agora(st, usuario, 'THEMA_PREVIEW', Tema_Preview)
-			ATUAL_CUSTOM_agora(st, usuario, 'THEMA_TERMINAL', Tema_Terminal)
-			ATUAL_CUSTOM_agora(st, usuario, 'THEMA_APP1', THEMA_APP1)
-			ATUAL_CUSTOM_agora(st, usuario, 'THEMA_APP2', THEMA_APP2)
+		# Temas
+		ATUAL_CUSTOM_agora(st, usuario, 'THEMA_EDITOR', Tema_Editor)
+		ATUAL_CUSTOM_agora(st, usuario, 'THEMA_PREVIEW', Tema_Preview)
+		ATUAL_CUSTOM_agora(st, usuario, 'THEMA_TERMINAL', Tema_Terminal)
+		ATUAL_CUSTOM_agora(st, usuario, 'THEMA_APP1', THEMA_APP1)
+		ATUAL_CUSTOM_agora(st, usuario, 'THEMA_APP2', THEMA_APP2)
+		if IMG:
+			ATUAL_CUSTOM_agora(st, usuario, 'OPC3', ESCURECER_IMAGEM)
 
-			st.success("✅ **TODAS** configs salvas!")
-			st.balloons()
-			st.rerun()
+		st.success("✅ **TODAS** configs salvas!")
+		st.balloons()
 
-	with col_btn2:
-		if st.button("🔄 Recarregar", type="secondary"):
-			st.rerun()
+
+		limpar_CASH()
+		st.rerun()
 
 

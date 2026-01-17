@@ -362,8 +362,24 @@ def contar_estrutura(caminho_base):
         "versoes": python_envs
     }
 
+def limpar_CASH():
+    import streamlit as st
+    st.cache_data.clear()
+    st.cache_resource.clear()
 
-from pathlib import Path
+def saudacao_por_hora_sistema() -> str:
+    hora = datetime.now().hour
+
+    if 5 <= hora < 12:
+        return "Bom dia"
+    elif 12 <= hora < 18:
+        return "Boa tarde"
+    elif 18 <= hora < 23:
+        return "Boa noite"
+    else:
+        return "Boa madrugada"
+
+
 import os
 from collections import defaultdict
 from datetime import datetime
@@ -416,6 +432,7 @@ def sincronizar_estrutura(caminho_arquivo=None):
     Varre o projeto em pasta_base e salva JSON dentro de .virtual_tcbt
     SE caminho_arquivo: PRIMEIRO verifica JSON, SE NÃO acha → varre filesystem
     """
+
     pasta_base = Path(_DIRETORIO_PROJETO_ATUAL_())
     nome_projeto = pasta_base.name
     caminho_raiz_absoluto = str(pasta_base)

@@ -3,10 +3,13 @@ import sqlite3
 import time
 
 
+import  streamlit as st
+
+
 def get_conn():
-	return sqlite3.connect("Base_Dados.db")
+    return sqlite3.connect("Base_Dados.db", check_same_thread=False)  # ← ADICIONE , check_same_thread=False
 
-
+@st.cache_resource
 def init_db():
 	conn = get_conn()
 	c = conn.cursor()
@@ -97,6 +100,7 @@ def esc_A_CONTROLE_ABSOLUTO(DIRETORIO_PROGRAMA, DIRETORIO_PROJETOS, DIRETORIOS_B
 	conn.close()
 
 
+@st.cache_resource
 def ler_A_CONTROLE_ABSOLUTO():
 	conn = get_conn()
 	c = conn.cursor()
@@ -141,6 +145,7 @@ def esc_A_CONTROLE_PROJETOS(DIRETORIO_TRABALHANDO,VERSION,DATA,DIRETORIOS,ARQUIV
 	c.close()
 	conn.close()
 
+@st.cache_resource
 def ler_A_CONTROLE_PROJETOS():
 	conn = get_conn()
 	c = conn.cursor()
@@ -184,12 +189,22 @@ def esc_B_ARQUIVOS_RECENTES(DIRETORIO_TRABALHANDO, OBS):
 	c.close()
 	conn.close()
 
+def se_B_ARQUIVOS_RECENTES(NOME_ARQUIVO):  # se True ou False , vazio ou cheio
+	conn = get_conn()
+	c = conn.cursor()
+	c.execute(f"SELECT * FROM B_ARQUIVOS_RECENTES WHERE DIRETORIO_TRABALHANDO = '{NOME_ARQUIVO}' and OBS =='' ")
+	ok = c.fetchone() is not None
+	c.close()
+	conn.close()
+	return ok
 
+
+@st.cache_resource
 def ler_B_ARQUIVOS_RECENTES(caminho =''):
 	if caminho:
 		conn = get_conn()
 		c = conn.cursor()
-		c.execute(f"SELECT OBS FROM B_ARQUIVOS_RECENTES where OBS= '{caminho}' ")
+		c.execute(f"SELECT OBS FROM B_ARQUIVOS_RECENTES where DIRETORIO_TRABALHANDO= '{caminho}' ")
 		result = c.fetchall()
 		c.close()
 		conn.close()
@@ -203,6 +218,22 @@ def ler_B_ARQUIVOS_RECENTES(caminho =''):
 		c.close()
 		conn.close()
 		return result
+
+def ATUAL_B_ARQUIVOS_RECENTES(st, DIRETORIO_TRABALHANDO, COLUNA, CONTEUDO, SOMAR=False):
+	conn = get_conn()
+	c = conn.cursor()
+	if SOMAR:
+		c.execute(f"SELECT {COLUNA} FROM B_ARQUIVOS_RECENTES WHERE DIRETORIO_TRABALHANDO = ?", (DIRETORIO_TRABALHANDO,))
+		resultado = c.fetchone()
+		valor_atual = resultado[0] if resultado and resultado[0] is not None else ''
+		novo_valor = str(valor_atual) + str(CONTEUDO)
+	else:
+		novo_valor = CONTEUDO
+
+	try:
+		c.execute(f"UPDATE B_ARQUIVOS_RECENTES SET {COLUNA} = ? WHERE DIRETORIO_TRABALHANDO = ?", (novo_valor, DIRETORIO_TRABALHANDO))
+		conn.commit()
+	except sqlite3.OperationalError: pass
 
 
 def Del_B_ARQUIVOS_RECENTES(ID=''):
@@ -238,6 +269,7 @@ def esc_CONTROLE_ARQUIVOS(NOME_ARQUIVO, CAMINHO_DIRETO, CONTEUDO_DO_ARQUIVO, EXT
 	conn.close()
 
 
+@st.cache_resource
 def ler_CONTROLE_ARQUIVOS():
 	conn = get_conn()
 	c = conn.cursor()
@@ -315,6 +347,7 @@ def esc_CUSTOMIZATION(NOME_CUSTOM, NOME_USUARIO, CAMINHO_DOWNLOAD, IMAGEM_LOGO,
 	conn.close()
 
 
+@st.cache_resource
 def ler_CUSTOMIZATION():
 	conn = get_conn()
 	c = conn.cursor()
@@ -324,6 +357,7 @@ def ler_CUSTOMIZATION():
 	conn.close()
 	return result
 
+@st.cache_resource
 def ler_cut(selected_custom):
 	conn = get_conn()
 	c = conn.cursor()
@@ -352,6 +386,7 @@ def se_CUSTOMIZATION(NOME_CUSTOM, COLUNA, VALOR=None):  # se True ou False , vaz
 	conn.close()
 	return ok
 
+@st.cache_resource
 def ler_CUSTOMIZATION_coluna_por_usuario(NOME_CUSTOM, COLUNA):
 	conn = get_conn()
 	c = conn.cursor()
@@ -427,6 +462,7 @@ def Del_CUSTOMIZATION(ID=''):
 			conn.close()
 			time.sleep(0.1)
 
+@st.cache_resource
 def ler_CUSTOMIZATION_coluna(COLUNA):
 	conn = get_conn()
 	c = conn.cursor()
@@ -480,3 +516,76 @@ if len(ler_CUSTOMIZATION()) == 0:
 		'',
 
 		'ATIVO')
+
+
+'''Descrição do Banco de Dados do Projeto
+
+O banco de dados do projeto é baseado em SQLite e tem como objetivo centralizar configurações globais, controle de projetos, estado atual de execução, arquivos manipulados e personalização do ambiente do usuário. Ele é composto atualmente por cinco tabelas principais.
+
+A tabela A_CONTROLE_ABSOLUTO é responsável pelas configurações globais do sistema. Ela armazena caminhos e credenciais essenciais para o funcionamento da aplicação. A coluna DIRETORIO_PROGRAMA define onde o sistema (IDE/DE) está instalado. DIRETORIO_PROJETOS indica a pasta padrão onde os projetos do usuário serão criados ou armazenados. DIRETORIOS_BACKUP guarda o local destinado a backups. DIRETORIO_OLLAMA e VERSAO_OLLAMA são usadas para integração com modelos locais (como Ollama). As colunas CHAVE_GPT e LOGUIN_GPT permitem futura integração com serviços de IA externos, como ChatGPT.
+
+A tabela A_CONTROLE_PROJETOS funciona como um registro histórico e operacional dos projetos. Cada vez que um projeto é criado ou aberto, ele é registrado nessa tabela. A coluna DIRETORIO_TRABALHANDO identifica o projeto. VERSION armazena a versão da linguagem ou ambiente utilizado (Python ou outra). DATA registra quando o projeto foi criado ou acessado. DIRETORIOS e ARQUIVOS armazenam contagens estruturais do projeto, e OBS é usada para observações gerais.
+
+A tabela B_ARQUIVOS_RECENTES representa o estado atual do projeto em uso. Ela existe para permitir que diferentes partes do sistema saibam qual projeto está ativo sem depender de variáveis globais ou repasses diretos entre scripts. Essa tabela contém apenas um registro ativo por vez. A coluna DIRETORIO_TRABALHANDO aponta para o projeto atual, e a coluna OBS armazena um JSON com o mapeamento completo da pasta — incluindo arquivos, diretórios e subdiretórios. Sempre que um novo projeto é ativado, o registro anterior é substituído.
+
+A tabela CONTROLE_ARQUIVOS armazena arquivos individuais que o usuário abre ou carrega, inclusive arquivos externos ao projeto atual. Ela contém o nome do arquivo (NOME_ARQUIVO), o caminho absoluto (CAMINHO_DIRETO), o conteúdo do arquivo (CONTEUDO_DO_ARQUIVO) e a extensão (EXTENTION). Essa estrutura permite leitura, edição e reaproveitamento de arquivos sem depender diretamente do sistema de arquivos a todo momento.
+
+Por fim, a tabela CUSTOMIZATION é responsável por toda a personalização do ambiente do usuário. Ela armazena o perfil ativo da interface, incluindo nome do usuário, caminho de download, logotipo, temas do editor, preview, terminal, cores, fontes, tamanhos, bordas e opções visuais adicionais. A coluna OBS é usada para marcar qual configuração está ativa no momento. O sistema sempre mantém um perfil ativo, com um perfil padrão sendo criado automaticamente na primeira execução.
+
+Resumo para Documentação do Projeto
+
+O banco de dados centraliza todas as configurações e estados do sistema.
+Ele controla:
+– configurações globais do ambiente
+– registro e histórico de projetos
+– projeto atualmente ativo
+– arquivos carregados ou editados
+– personalização completa da interface do usuário
+
+A estrutura foi pensada para desacoplar o estado da aplicação dos scripts individuais, garantindo persistência, organização e escalabilidade.
+
+Explicação Geral (visão técnica)
+
+Arquiteturalmente, você separou muito bem estado global, estado atual, histórico e configuração visual.
+A tabela B_ARQUIVOS_RECENTES é o ponto-chave: ela funciona como um estado compartilhado persistente, evitando que a aplicação principal precise repassar informações entre múltiplos módulos. Isso é uma solução sólida para Streamlit, onde o estado entre arquivos pode se tornar problemático.
+
+O uso de INSERT OR REPLACE simplifica controle de unicidade sem precisar de chaves artificiais. A criação automática da customização padrão garante que o sistema nunca inicie em estado inválido.
+
+No geral, o modelo está coerente, bem segmentado e pronto para crescer sem retrabalho estrutural.
+
+Sugestão principal (mais coerente com o que você construiu):
+
+CONTROLE_SISTEMA
+
+CONTROLE_PROJETOS
+
+PROJETO_ATIVO
+
+CONTROLE_ARQUIVOS
+
+CUSTOMIZACAO_USUARIO
+
+Alternativa mantendo a ideia de “estado / nível”:
+
+A_CONFIG_SISTEMA
+
+A_REGISTRO_PROJETOS
+
+B_PROJETO_ATUAL
+
+C_ARQUIVOS_ABERTOS
+
+D_CUSTOMIZACAO
+
+Alternativa mais conceitual (documentação bonita):
+
+CONFIGURACAO_GLOBAL
+
+HISTORICO_PROJETOS
+
+ESTADO_EXECUCAO
+
+ARQUIVOS_EM_USO
+
+PERFIL_INTERFACE
+'''

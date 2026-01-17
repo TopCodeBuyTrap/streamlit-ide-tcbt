@@ -140,7 +140,7 @@ def run_command_async(comando, aba_nome):
     thread.start()
 
 
-#@st.fragment(run_every=1.0)
+@st.fragment(run_every=1.0)
 def RenderTerminalAba(aba_nome):
     TERMINAL_TAM_MENU = ler_CUSTOMIZATION_coluna('TERMINAL_TAM_MENU')
     THEMA_TERMINAL = ler_CUSTOMIZATION_coluna('THEMA_TERMINAL')
@@ -175,7 +175,7 @@ def RenderTerminalAba(aba_nome):
 
     conteudo = st_ace(
        value=st.session_state[buff_k],
-       language='text',
+       language='kotlin',
        theme=THEMA_TERMINAL,
        height=500,
         font_size=TERMINAL_TAM_MENU,
