@@ -4,16 +4,24 @@ INSTALAÇÕES E MOSULOS E PENDENCIAS PARA OPROJETO
 python.exe -m pip install --upgrade pip
 python -m pip install --upgrade setuptools wheel
 
-# Criar App para executavel em pc
+# ---------------------------- Criar App para executavel em pc
 pip install streamlit-desktop-app
+Name: streamlit-desktop-app
+Version: 0.3.3
+Summary: Easily convert Streamlit apps into standalone desktop applications.
+Home-page: https://github.com/ohtaman/streamlit-desktop-app
+Author: ohtaman
+Author-email: ohtamans@gmail.com
 
 # Editor de codigos
 pip install streamlit-ace==0.1.1
 
 
 
+pip install streamlit-aggrid
 
 streamlit run APP_.py
+streamlit run Teste.py
 
 
 

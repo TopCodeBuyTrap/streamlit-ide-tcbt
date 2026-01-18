@@ -9,7 +9,7 @@ import  streamlit as st
 def get_conn():
     return sqlite3.connect("Base_Dados.db", check_same_thread=False)  # ← ADICIONE , check_same_thread=False
 
-@st.cache_resource
+
 def init_db():
 	conn = get_conn()
 	c = conn.cursor()
@@ -100,7 +100,7 @@ def esc_A_CONTROLE_ABSOLUTO(DIRETORIO_PROGRAMA, DIRETORIO_PROJETOS, DIRETORIOS_B
 	conn.close()
 
 
-@st.cache_resource
+
 def ler_A_CONTROLE_ABSOLUTO():
 	conn = get_conn()
 	c = conn.cursor()
@@ -145,7 +145,7 @@ def esc_A_CONTROLE_PROJETOS(DIRETORIO_TRABALHANDO,VERSION,DATA,DIRETORIOS,ARQUIV
 	c.close()
 	conn.close()
 
-@st.cache_resource
+
 def ler_A_CONTROLE_PROJETOS():
 	conn = get_conn()
 	c = conn.cursor()
@@ -199,7 +199,7 @@ def se_B_ARQUIVOS_RECENTES(NOME_ARQUIVO):  # se True ou False , vazio ou cheio
 	return ok
 
 
-@st.cache_resource
+
 def ler_B_ARQUIVOS_RECENTES(caminho =''):
 	if caminho:
 		conn = get_conn()
@@ -269,7 +269,7 @@ def esc_CONTROLE_ARQUIVOS(NOME_ARQUIVO, CAMINHO_DIRETO, CONTEUDO_DO_ARQUIVO, EXT
 	conn.close()
 
 
-@st.cache_resource
+
 def ler_CONTROLE_ARQUIVOS():
 	conn = get_conn()
 	c = conn.cursor()
@@ -347,7 +347,7 @@ def esc_CUSTOMIZATION(NOME_CUSTOM, NOME_USUARIO, CAMINHO_DOWNLOAD, IMAGEM_LOGO,
 	conn.close()
 
 
-@st.cache_resource
+
 def ler_CUSTOMIZATION():
 	conn = get_conn()
 	c = conn.cursor()
@@ -357,7 +357,7 @@ def ler_CUSTOMIZATION():
 	conn.close()
 	return result
 
-@st.cache_resource
+
 def ler_cut(selected_custom):
 	conn = get_conn()
 	c = conn.cursor()
@@ -386,7 +386,7 @@ def se_CUSTOMIZATION(NOME_CUSTOM, COLUNA, VALOR=None):  # se True ou False , vaz
 	conn.close()
 	return ok
 
-@st.cache_resource
+
 def ler_CUSTOMIZATION_coluna_por_usuario(NOME_CUSTOM, COLUNA):
 	conn = get_conn()
 	c = conn.cursor()
@@ -462,7 +462,7 @@ def Del_CUSTOMIZATION(ID=''):
 			conn.close()
 			time.sleep(0.1)
 
-@st.cache_resource
+
 def ler_CUSTOMIZATION_coluna(COLUNA):
 	conn = get_conn()
 	c = conn.cursor()

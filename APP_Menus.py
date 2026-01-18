@@ -513,7 +513,7 @@ Estesões: {r['extensoes']}''')
 
                     st.session_state.nova_pasta_selecionada = (nome_arq, caminho)
                     st.success(f"✅ Projeto {nome_arq} salvo no banco!")
-                    st.rerun()
+                    limpar_CASH()
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar projeto: {e}")
 

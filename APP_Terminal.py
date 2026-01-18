@@ -140,10 +140,9 @@ def run_command_async(comando, aba_nome):
     thread.start()
 
 
-@st.fragment(run_every=1.0)
-def RenderTerminalAba(aba_nome):
-    TERMINAL_TAM_MENU = ler_CUSTOMIZATION_coluna('TERMINAL_TAM_MENU')
-    THEMA_TERMINAL = ler_CUSTOMIZATION_coluna('THEMA_TERMINAL')
+#@st.fragment(run_every=1.0)
+def RenderTerminalAba(aba_nome,THEMA_TERMINAL,TERMINAL_TAM_MENU):
+
     if "process_queues" not in st.session_state:
        st.session_state["process_queues"] = {}
 
@@ -214,7 +213,7 @@ def RenderTerminalAba(aba_nome):
        st.rerun()
 
 
-def Terminal():
+def Terminal(THEMA_TERMINAL,TERMINAL_TAM_MENU):
     if "process_queues" not in st.session_state:
        st.session_state["process_queues"] = {}
     if "abas_terminal" not in st.session_state:
@@ -232,4 +231,4 @@ def Terminal():
        tabs = st.tabs(st.session_state.abas_terminal)
        for idx, aba_nome in enumerate(st.session_state.abas_terminal):
           with tabs[idx]:
-             RenderTerminalAba(aba_nome)
+             RenderTerminalAba(aba_nome,THEMA_TERMINAL,TERMINAL_TAM_MENU)

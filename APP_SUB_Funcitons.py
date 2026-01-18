@@ -488,17 +488,21 @@ def Sinbolos(arquivo):
     arquivo = Path(arquivo)
 
     ICONES_EXT = {
-        ".py": "🐍",
-        ".txt": "📄",
-        ".js": "🟨",
-        ".html": "🌐",
-        ".css": "🎨",
-        ".json": "🗂️",
-        ".md": "📝",
-        ".cpp": "⚙️",
-        ".java": "☕",
-        ".php": "🐘",
-        ".rb": "💎"
+        ".py": "🐍",  # Python - PERFEITO
+        ".txt": "📄",  # TXT - PERFEITO
+        ".js": "⚡",  # JavaScript - ⚡ Elétrico/Moderno
+        ".html": "🌐",  # HTML - PERFEITO
+        ".css": "🎨",  # CSS - PERFEITO
+        ".json": "📋",    # JSON - Lista/configuração perfeita!
+        ".md": "📝",  # Markdown - PERFEITO
+        ".cpp": "🔧",  # C++ - 🔧 Ferramenta (compilado)
+        ".java": "☕",  # Java - PERFEITO
+        ".php": "🐘",  # PHP - PERFEITO
+        ".rb": "💎",  # Ruby - PERFEITO
+        ".cfg": "⚙️",  # Config
+        ".pth": "🧠",  # PTH - PyTorch/Pesos de modelo 🧠
+        ".db": "🗄️",  # PTH - PyTorch/Pesos de modelo 🧠
+
     }
 
     return ICONES_EXT.get(arquivo.suffix.lower(), "📦")

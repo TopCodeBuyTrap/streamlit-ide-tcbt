@@ -6,7 +6,7 @@ import streamlit as st
 import os
 
 
-def Main_App(st):
+def Carregamento_BancoDados_Temas(st):
 	# ✅ CORREÇÃO 1: Chama funções ANTES de usar variáveis
 	Pasta_Isntal_exec = _DIRETORIO_EXECUTAVEL_()
 	Pasta_RAIZ_projeto = _DIRETORIO_PROJETOS_()
@@ -17,7 +17,15 @@ def Main_App(st):
 	CAMINHO_DOWNLOAD = ler_CUSTOMIZATION_coluna('CAMINHO_DOWNLOAD')
 	IMAGEM_LOGO = ler_CUSTOMIZATION_coluna('IMAGEM_LOGO')
 
+	THEMA_EDITOR = ler_CUSTOMIZATION_coluna('THEMA_EDITOR')
 	EDITOR_TAM_MENU = ler_CUSTOMIZATION_coluna('EDITOR_TAM_MENU')
+
+	THEMA_PREVIEW = ler_CUSTOMIZATION_coluna('THEMA_PREVIEW')
+	PREVIEW_TAM_MENU = ler_CUSTOMIZATION_coluna('PREVIEW_TAM_MENU')
+
+	TERMINAL_TAM_MENU = ler_CUSTOMIZATION_coluna('TERMINAL_TAM_MENU')
+	THEMA_TERMINAL = ler_CUSTOMIZATION_coluna('THEMA_TERMINAL')
+
 	THEMA_APP1 = ler_CUSTOMIZATION_coluna('THEMA_APP1')
 	THEMA_APP2 = ler_CUSTOMIZATION_coluna('THEMA_APP2')
 	FONTE_MENU = ler_CUSTOMIZATION_coluna('FONTE_MENU')
@@ -26,8 +34,7 @@ def Main_App(st):
 	FONTE_CAMPO = ler_CUSTOMIZATION_coluna('FONTE_CAMPO')
 	TAM_CAMPO = ler_CUSTOMIZATION_coluna('FONTE_TAM_CAMPO')
 	COR_CAMPO = ler_CUSTOMIZATION_coluna('FONTE_COR_CAMPO')
-	THEMA_PREVIEW = ler_CUSTOMIZATION_coluna('THEMA_PREVIEW')
-	PREVIEW_TAM_MENU = ler_CUSTOMIZATION_coluna('PREVIEW_TAM_MENU')
+
 
 	RADIO = ler_CUSTOMIZATION_coluna('RADIAL')
 	BORDA = ler_CUSTOMIZATION_coluna('BORDA')
@@ -194,7 +201,7 @@ def Main_App(st):
 		    background-color: {THEMA_APP1} !important;
 		    top: 5% !important;
 		    left: 8% !important;
-		    z-index: 9999 !important;
+		    z-index: 999999 !important;
 		}}
 
     [data-testid="stExpandSidebarButton"] {{                        /* BOTÃO DO SIDEBAR DE BAIXO << */            
@@ -235,10 +242,24 @@ def Main_App(st):
 	
 	    
     [data-testid="stBaseButton-pills"] {{                               /* ST.PILLS BOTAO */
-        background-color: {THEMA_APP1} !important;
-        border: {BORDA}px solid {COR_CAMPO} !important; 
+        background-color: transparent !important;
+        border: 0px solid {COR_CAMPO} !important; 
+        margin-bottom: -8% !important;
+        margin-left: -30% !important;   /* menos padding esquerdo = texto mais pra esquerda */
+		text-align: left !important;
+	}}
+	
+	[data-testid="stBaseButton-pillsActive"] {{
+        border: 0px solid {COR_CAMPO} !important; 
+		padding: 4px 8px !important;            /* mesma altura */
+		margin-bottom: 2px !important;  
+		border-radius: 0 !important;
+		margin-bottom: -8% !important;
+		margin-left: -30% !important;   /* menos padding esquerdo = texto mais pra esquerda */
+
 
     }}
+    
       [data-testid="stBaseButton-secondary"]:has(kbd[aria-label="Shortcut Ctrl + Enter"]){{/* BOTAO RUN */
         margin-top: -11.05% !important;
         background-color: {COR_CAMPO} !important;
@@ -405,18 +426,7 @@ def Main_App(st):
 	</style>
 	""", unsafe_allow_html=True)
 
-	st.markdown("""
-	<style>
-	/* ELIMINA 100% FLICKERING ACE + RERUN */
-	.stAceEditor { transition: none !important; }
-	.st-emotion-cache-1r62ssa { transition: none !important; }
-	div[data-testid="column"] div div [data-baseweb="textarea"] { 
-	    animation: none !important; 
-	}
-	/* Estabiliza render durante updates */
-	[data-testid="stHorizontalBlock"] { min-height: 500px !important; }
-	</style>
-	""", unsafe_allow_html=True)
+
 
 	def criar_estilos_botao():  # ainda noa usei
 		"""Estilos CSS personalizados"""
@@ -450,6 +460,6 @@ def Main_App(st):
 	    </style>
 	    """
 
-	return IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU
+	return IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU, THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU,THEMA_TERMINAL,TERMINAL_TAM_MENU
 
 # ✅ IMPORTS NO TOPO (CORRIGIDO)

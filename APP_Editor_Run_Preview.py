@@ -23,7 +23,9 @@ def smart_paste_format(code):
     result = '\n'.join(formatted)
     return re.sub(r'\n{3,}', '\n\n', result)
 
-def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, layout, col_weights, cont):
+
+def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, layout, col_weights,
+                    THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU):
     arquivo_id = "__default__"
 
     # ============================================================= ALTURAS
@@ -183,15 +185,14 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
 
         # --------------------------------------------------------------------- EDITOR
         if name == "Editor":
-            THEMA_EDITOR = ler_CUSTOMIZATION_coluna('THEMA_EDITOR')
-            EDITOR_TAM_MENU = ler_CUSTOMIZATION_coluna('EDITOR_TAM_MENU')
+
             Editor_Codigo = st_ace(
                 value=state['code'],
                 theme=THEMA_EDITOR,
                 language=linguagem,
                 height=height,
                 font_size=EDITOR_TAM_MENU,
-                auto_update=True,
+                auto_update=False,
                 wrap=True,
                 annotations=Anotations_Editor(state['code']),
                 markers=Marcadores_Editor(state['code']),
@@ -238,8 +239,6 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
                 pass
 
             # TERMINAL ACE (SAÍDA/ENTRADA)
-            THEMA_PREVIEW = ler_CUSTOMIZATION_coluna('THEMA_PREVIEW')
-            PREVIEW_TAM_MENU = ler_CUSTOMIZATION_coluna('PREVIEW_TAM_MENU')
             Terminal_Input = st_ace(
                 value=state['output'],
                 font_size=PREVIEW_TAM_MENU,
@@ -278,11 +277,27 @@ def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, l
     # ============================================================= RENDERIZAÇÃO (Layouts - Terminal participa aqui!)
     if not containers_order:
         st.info("Nenhum painel selecionado")
+
+
+
     else:
+        def get_columns(layout, col_weights, n_default):
+            """Retorna colunas corretas - VALIDAÇÃO COMPLETA"""
+            # Se não tem col_weights OU n_default inválido
+            if not col_weights or len(col_weights) != n_default:
+                return st.columns(n_default)
+
+            # ✅ VALIDAÇÃO: todos os valores devem ser > 0
+            if all(w > 0 for w in col_weights):
+                return st.columns(col_weights)
+
+            # Fallback se tiver valores inválidos (0 ou negativo)
+            return st.columns(n_default)
+
         n = len(containers_order)
 
         if layout == 1:
-            cols = st.columns(col_weights if col_weights else n)
+            cols = get_columns(layout, col_weights, n)
             for col, name in zip(cols, containers_order):
                 with col:
                     render_container(name, BASE_HEIGHT, f"{name}_l1")

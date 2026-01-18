@@ -1,17 +1,5 @@
-from datetime import datetime
-from APP_Editor_Run_Preview import Editor_Previews
-from APP_Menus import Apagar_Arq
-from APP_SUB_Customizar import Customization
-from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto, contar_estrutura
-from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
-from APP_Sidebar import Sidebar
-from Banco_dados import ler_A_CONTROLE_PROJETOS, ler_B_ARQUIVOS_RECENTES, ATUAL_B_ARQUIVOS_RECENTES, \
-    se_B_ARQUIVOS_RECENTES, esc_B_ARQUIVOS_RECENTES, Del_B_ARQUIVOS_RECENTES
-from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
+from Banco_Predefinitions import carregar_config_atual, salvar_config_atual
 
-import os
-from pathlib import Path
-from APP_Terminal import Terminal
 
 def Testar_Fluxo_Run(col):
 
@@ -127,6 +115,7 @@ def select_arquivo_recente(col2):
 
 def app(col1,col2 ):
 
+
     LOG = []
     # USO
     caminho, versao, data = select_arquivo_recente(col2)
@@ -150,82 +139,80 @@ def app(col1,col2 ):
             from APP_Menus import Abrir_Menu
             Abrir_Menu(st)
         # ============================================================= MENU SUPERIOR
-        with col2.expander("⚙️ Configuração de Layot"):
-            m1, m2, m3, m4 = st.columns([4, 4, 3, 3])
+        with col2.expander("⚙️ Configuração de Layout"):
+            m1, m2, m3, m4 = st.columns([4, 5, 4, 3])
+
+            # 🔄 CARREGA CONFIGURAÇÃO ANTERIOR
+            config_salva = carregar_config_atual()
+            default_containers = config_salva['containers_order'] if config_salva else ["Editor", "Preview",
+                                                                                        "ChatOllama"]
+            default_layout = config_salva['layout'] if config_salva else 1
+            default_height = config_salva['height_mode'] if config_salva else "medio"
+            default_weights = config_salva['col_weights'] if config_salva else None
+
             # --------------------------------------------------------- 1️⃣ MULTISELECT
             with m1:
                 containers_order = st.multiselect(
                     "Painéis",
                     options=["Editor", "Preview", "ChatOllama"],
-                    default=["Editor", "Preview", "ChatOllama"], label_visibility="collapsed"
+                    default=default_containers,
+                    label_visibility="collapsed"
                 )
+
             # --------------------------------------------------------- 2️⃣ LAYOUT
             with m2:
-                layout = st.pills(
+                layout = st.radio(
                     "Layout",
                     options=[1, 2, 3, 4],
+                    index=[1, 2, 3, 4].index(default_layout) if default_layout in [1, 2, 3, 4] else 0,
                     format_func=lambda x: {
-                        1: "Horizontal",
-                        2: "Grande + Dois",
-                        3: "Dois + Grande",
-                        4: "Vertical"
+                        1: "Horizontal", 2: "Grande + Dois", 3: "Dois + Grande", 4: "Vertical"
                     }[x],
-                    selection_mode="single", label_visibility="collapsed"
+                    horizontal=True,
+                    label_visibility="collapsed"
                 ) or 1
+
             # --------------------------------------------------------- 3️⃣ ALTURA
             with m3:
-                height_mode = st.pills(
+                height_mode = st.radio(
                     "Altura",
                     options=["pequeno", "medio", "grande", "extra"],
-                    format_func=lambda x: {
-                        "pequeno": "Pequeno",
-                        "medio": "Médio",
-                        "grande": "Grande",
-                        "extra": "Extra"
-
-                    }[x],
-                    selection_mode="single", label_visibility="collapsed"
+                    index=["pequeno", "medio", "grande", "extra"].index(default_height) if default_height in ["pequeno",
+                                                                                                              "medio",
+                                                                                                              "grande",
+                                                                                                              "extra"] else 1,
+                    format_func=lambda x: {"pequeno": "P", "medio": "M", "grande": "G", "extra": "E"}[x],
+                    horizontal=True,
+                    label_visibility="collapsed"
                 ) or "medio"
+
             # --------------------------------------------------------- 4️⃣ AJUSTE DE COLUNAS
             with m4:
-                col_weights = None
+                col_weights = default_weights
+                total_peso = 10
 
-                # ===== Layout 1: 3 colunas → 3 sliders horizontais
                 if layout == 1:
-                    s1, s2, s3 = st.columns(3)
-                    with s1:
-                        c1 = st.slider("C1", 1, 10, 4, label_visibility="collapsed")
-                    with s2:
-                        c2 = st.slider("C2", 1, 10, 3, label_visibility="collapsed")
-                    with s3:
-                        c3 = st.slider("C3", 1, 10, 3, label_visibility="collapsed")
-
+                    s1, s2 = st.columns(2)
+                    c1 = s1.slider("C1", 1, total_peso - 2, 4, key="c1_l1")
+                    c2 = s2.slider("C2", 1, total_peso - 2, 3, key="c2_l1")
+                    c3 = total_peso - c1 - c2
                     col_weights = [c1, c2, c3]
 
-                # ===== Layout 2: 2 colunas → 2 sliders horizontais
                 elif layout == 2:
-                    s1, s2 = st.columns(2)
-                    with s1:
-                        c1 = st.slider("Esq", 1, 10, 6, label_visibility="collapsed")
-                    with s2:
-                        c2 = st.slider("Dir", 1, 10, 4, label_visibility="collapsed")
-
+                    c1 = st.slider("Esq", 1, total_peso - 1, 6, key="c1_l2")
+                    c2 = total_peso - c1
                     col_weights = [c1, c2]
 
-                # ===== Layout 3: 2 colunas superiores → 2 sliders horizontais
                 elif layout == 3:
-                    s1, s2 = st.columns(2)
-                    with s1:
-                        c1 = st.slider("Sup1", 1, 10, 5, label_visibility="collapsed")
-                    with s2:
-                        c2 = st.slider("Sup2", 1, 10, 5, label_visibility="collapsed")
-
+                    c1 = st.slider("Sup1", 1, total_peso - 1, 5, key="c1_l3")
+                    c2 = total_peso - c1
                     col_weights = [c1, c2]
 
-                # ===== Layout 4: vertical → sem sliders
-                else:
-                    col_weights = None
+            # 💾 SALVA AUTOMATICAMENTE toda vez que muda
+            salvar_config_atual(containers_order, layout, height_mode, col_weights)
             Customization(st,NOME_CUSTOM)
+        
+
         #--------------------------------------------------------------------- MENUS DE EDIÇÃO E CRIAÇÃO DE ARQUIVOS
         from  APP_Menus import  Abrir_Menu,Custom
         Pasta_Executavel = _DIRETORIO_EXECUTAVEL_()
@@ -251,8 +238,8 @@ def app(col1,col2 ):
 
             if RUN_ or RUN:
                 RUN_ = True
-            #Arq_Selec = Sidebar(st,RUN_,Tab2,Meus_Arquivos,height_mode,containers_order,layout,col_weights,)
-            Arq_Selec_Nomes ,Arq_Selec_Diretorios = Sidebar(st,col2,Meus_Arquivos,7)
+            #Arq_Selec_Nomes ,Arq_Selec_Diretorios = Sidebar(st,Pasta_Projeto_Atual)
+            Arq_Selec_Nomes ,Arq_Selec_Diretorios = Sidebar_Diretorios(st,Meus_Arquivos,7)
 
         Arq_Selec = ''
         if len(Arq_Selec_Diretorios) > 0:
@@ -262,9 +249,11 @@ def app(col1,col2 ):
             for i, tab in enumerate(tabs):
                 with tab:
                     arquivo = Arq_Selec_Diretorios[i]
-                    Editor_Previews(RUN_, arquivo, Identificar_linguagem(arquivo),
-                                    height_mode, containers_order, layout, col_weights, i)
-
+                    try:
+                        Editor_Previews(RUN_, arquivo, Identificar_linguagem(arquivo),
+                                    height_mode, containers_order, layout, col_weights, THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU)
+                    except UnicodeDecodeError:
+                        st.warning('Arquivo não Reconconhecido GmeOver!')
                 Arq_Selec = arquivo
 
         #
@@ -272,9 +261,9 @@ def app(col1,col2 ):
         val = ''
         with Tab2.expander(f"{val}:material/terminal_output:",  expanded=False):
             # Chamada principal
-            Terminal()
+            Terminal(THEMA_TERMINAL,TERMINAL_TAM_MENU)
 
-        st.write(Arq_Selec)
+
 
 
         caminho = Path(Arq_Selec)  # transforma em Path
@@ -295,8 +284,20 @@ def app(col1,col2 ):
 #---------------------------
 if __name__ == "__main__":
     import streamlit as st
+    from datetime import datetime
+    from APP_Editor_Run_Preview import Editor_Previews
+    from APP_Menus import Apagar_Arq
+    from APP_SUB_Customizar import Customization
+    from APP_SUB_Funcitons import Identificar_linguagem, escreve, chec_se_arq_do_projeto, contar_estrutura
+    from APP_SUB_Janela_Explorer import listar_arquivos_e_pastas, Open_Explorer
+    from APP_Sidebar import  Sidebar_Diretorios
+    from Banco_dados import ler_A_CONTROLE_PROJETOS, ler_B_ARQUIVOS_RECENTES, ATUAL_B_ARQUIVOS_RECENTES, \
+        se_B_ARQUIVOS_RECENTES, esc_B_ARQUIVOS_RECENTES, Del_B_ARQUIVOS_RECENTES, ler_A_CONTROLE_ABSOLUTO, Del_A_CONTROLE_ABSOLUTO,Del_CUSTOMIZATION
+    from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
 
-    from Banco_dados import ler_A_CONTROLE_ABSOLUTO, Del_A_CONTROLE_ABSOLUTO,Del_CUSTOMIZATION
+    import os
+    from pathlib import Path
+    from APP_Terminal import Terminal
 
     st.set_page_config(page_title="IDE Python Streamlit", layout="wide")
 
@@ -305,14 +306,9 @@ if __name__ == "__main__":
 
     # 🔹 SE JÁ TEM CONFIG → ENTRA DIRETO NA IDE
     if len(ler_A_CONTROLE_ABSOLUTO()) > 0 or st.session_state.config_absoluta_ok:
-        from APP_Htmls import Main_App
-        IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU = Main_App(st)
+        from APP_Htmls import Carregamento_BancoDados_Temas
+        IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU, THEMA_EDITOR, EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU, THEMA_TERMINAL,TERMINAL_TAM_MENU = Carregamento_BancoDados_Temas(st)
         col1,col2 = st.columns([.3,9])
-
-
-
-
-
         app(col1,col2 )
 
     # 🔹 SENÃO → MOSTRA ABERTURA
