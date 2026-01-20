@@ -1,172 +1,234 @@
-import os
+# --------- ESTADOS ----------
+            if "terminal_base_len" not in st.session_state:
+                st.session_state.terminal_base_len = len(state["output"])
+
+            if "terminal_last_user_len" not in st.session_state:
+                st.session_state.terminal_last_user_len = 0
+
+            # --------- TERMINAL ----------
+            Terminal_Input = st_ace(
+                value=state["output"],
+                font_size=PREVIEW_TAM_MENU,
+                theme=THEMA_PREVIEW,
+                language=linguagem,
+                height=height,
+                auto_update=True,
+                show_gutter=False,
+                placeholder="Saída do console...",
+                wrap=True,
+                key=f"terminal_{Arq_Selec}",
+            )
+
+            texto = Terminal_Input or ""
+
+            base_len = st.session_state.terminal_base_len
+            user_part = texto[base_len:] if len(texto) >= base_len else ""
+
+            st.write("BASE_LEN:", base_len)
+            st.write("TEXTO_LEN:", len(texto))
+            st.write("USER_PART:", repr(user_part))
+
+            # --------- DETECÇÃO REAL DE ENTER ----------
+            if len(user_part) > st.session_state.terminal_last_user_len:
+                st.write(">>> USUÁRIO DIGITOU")
+
+                if user_part.endswith("\n"):
+                    comando = user_part.rstrip("\n")
+                    st.write(">>> ENTER REAL:", repr(comando))
+
+
+
+
+
+d = input(('diga algo:').title())
+print(f'O usuario Diz= {d}')
+
+------------------------------------------------------ editor funcionando ma é cru
+
+
+
+from APP_SUB_Janela_Explorer import Abrir_Arquivo_Select_Tabs
+from Banco_dados import ler_CUSTOMIZATION_coluna
+from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+
+
+
+import time
 import streamlit as st
-import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
-
-st.set_page_config(layout="wide")
-
-ROOT = os.getcwd()
-
-if "expanded" not in st.session_state:
-	st.session_state.expanded = set()
-
-# ✅ SEMPRE LISTA - NUNCA SET!
-if "selecionados" not in st.session_state:
-	st.session_state.selecionados = []
+from streamlit_ace import st_ace
+import sys
+import threading
+import queue
+import os
 
 
-def montar(base, nivel=0):
-	linhas = []
-	try:
-		itens = sorted(os.listdir(base))
-	except PermissionError:
-		return linhas
+def Editor_Previews(Rodar_Codigo, Diretorio, linguagem,THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU,IDES):
+    st.success(f"📁 {Diretorio}")
+    COL1, COL2 = st.columns(2)
+    ESTADO_ = st.session_state
 
-	for nome in itens:
-		caminho = os.path.join(base, nome)
-		is_dir = os.path.isdir(caminho)
+    # ✅ INICIALIZAÇÃO MELHORADA
+    if 'arquivo_atual' not in ESTADO_:
+        ESTADO_.arquivo_atual = Diretorio
+        ESTADO_.conteudo_arquivo = ""
+        if Diretorio and os.path.isfile(Diretorio):
+            ESTADO_.conteudo_arquivo = Abrir_Arquivo_Select_Tabs(st, Diretorio)
 
-		linhas.append({
-			"nome": nome,
-			"caminho": caminho,
-			"tipo": "pasta" if is_dir else "arquivo",
-			"nivel": nivel,
-			"expanded": caminho in st.session_state.expanded,
-			"selecionado": caminho in st.session_state.selecionados
-		})
+    # 🚨 SÓ recarrega se ARQUIVO MUDOU (não no primeiro run)
+    if Diretorio != ESTADO_.arquivo_atual and Diretorio and os.path.isfile(Diretorio):
+        ESTADO_.arquivo_atual = Diretorio
+        ESTADO_.conteudo_arquivo = Abrir_Arquivo_Select_Tabs(st, Diretorio)
 
-		if is_dir and caminho in st.session_state.expanded:
-			linhas.extend(montar(caminho, nivel + 1))
-
-	return linhas
-
-
-df = pd.DataFrame(montar(ROOT))
-
-tree_renderer = JsCode("""
-class TreeRenderer {
-  init(params) {
-    this.eGui = document.createElement('div');
-    this.eGui.style.paddingLeft = (params.data.nivel * 25) + 'px';
-    this.eGui.style.fontFamily = 'monospace';
-    this.eGui.style.cursor = 'pointer';
-
-    let icon = '';
-    let corIcone = '#666';
-
-    if (params.data.tipo === 'pasta') {
-      icon = params.data.expanded ? '▾' : '▸';
-      corIcone = '#007acc';
-    } else {
-      if (params.value.toLowerCase().endsWith('.py')) icon = '🐍';
-      else if (params.value.toLowerCase().endsWith('.js')) icon = '⚡';
-      else if (params.value.toLowerCase().endsWith('.html')) icon = '🌐';
-      else if (params.value.toLowerCase().endsWith('.css')) icon = '🎨';
-      else if (params.value.toLowerCase().endsWith('.json')) icon = '📄';
-      else icon = '📄';
+    # ✅ SESSION STATE PERSISTENTE
+    defaults = {
+        'code_buffer': ESTADO_.conteudo_arquivo,  # ← O QUE VOCÊ DIGITA
+        'code_committed': ESTADO_.conteudo_arquivo,  # ← O QUE VAI EXECUTAR
+        'output': "",
+        'input_queue': queue.Queue(),
+        'output_queue': queue.Queue(),
+        'thread_running': False,
     }
+    for key, value in defaults.items():
+        if key not in ESTADO_:
+            ESTADO_[key] = value
 
-    let nome = params.value || '';
-    let isSelected = params.data.selecionado;
+    class CustomStdout:
+        def __init__(self, output_q): self.output_q = output_q
 
-    this.eGui.innerHTML = `
-      <span style="margin-right: 12px; color: ${corIcone}; font-weight: bold; font-size: 14px;">${icon}</span>
-      <span style="${isSelected ? 'color: #059669; font-weight: bold;' : 'color: #333;'}">${nome}</span>
-    `;
-  }
+        def write(self, s):
+            if s and s.strip(): self.output_q.put(s.rstrip('\n'))
 
-  getGui() {
-    return this.eGui;
-  }
+        def flush(self): pass
 
-  refresh(params) {
-    return false;
-  }
-}
-""")
+    def run_code_thread(code, input_q, output_q):
+        def safe_log(msg):
+            print(f"LOG: {msg}")
 
-gb = GridOptionsBuilder.from_dataframe(df)
+        safe_log("Thread iniciada")
 
-gb.configure_column(
-	"nome",
-	headerName="📁 Explorador de Arquivos",
-	cellRenderer=tree_renderer,
-	width=800,
-	resizable=True,
-	sortable=True,
-	filter=True,
-	pinned="left"
-)
+        def custom_input(prompt=""):
+            if prompt: output_q.put(prompt)
+            return input_q.get()
 
-gb.configure_column("caminho", hide=True)
-gb.configure_column("tipo", hide=True)
-gb.configure_column("nivel", hide=True)
-gb.configure_column("expanded", hide=True)
-gb.configure_column("selecionado", hide=True)
+        stdout_redirect = CustomStdout(output_q)
+        old_stdout = sys.stdout
+        sys.stdout = stdout_redirect
 
-gb.configure_grid_options(
-	domLayout="normal",
-	suppressRowHoverHighlight=False,
-	rowSelection="multiple",
-	rowMultiSelectWithClick=True,
-	suppressRowClickSelection=False,
-	headerHeight=40,
-	rowHeight=28,
-	animateRows=True
-)
+        try:
+            exec(code, {'input': custom_input, '__name__': '__main__'})
+            output_q.put("\n✓ Programa finalizado com sucesso")
+        except Exception as e:
+            output_q.put(f"\n❌ Erro: {str(e)}")
+        finally:
+            sys.stdout = old_stdout
+            output_q.put("PROGRAM_FINISHED")
 
-grid_options = gb.build()
+    with COL1:
+        st.subheader("📝 Editor")
+        # ✅ EDITOR SEMPRE USA BUFFER (não apaga o que você digitou!)
+        code = st_ace(
+            value=ESTADO_.code_buffer,
+            language=linguagem,
+            theme= THEMA_EDITOR,
+            font_size=EDITOR_TAM_MENU,
+            height=450,
+            auto_update=True,
+            wrap=True,
+            key=f"editor_{IDES}"
+        )
 
-response = AgGrid(
-	df,
-	gridOptions=grid_options,
-	update_mode=GridUpdateMode.SELECTION_CHANGED,
-	allow_unsafe_jscode=True,
-	height=500,
-	fit_columns_on_grid_load=True
-)
+        # ✅ ATUALIZA BUFFER em tempo real
+        if not ESTADO_.thread_running:
+            ESTADO_.code_buffer = code
 
-selected = response["selected_rows"]
+        # ✅ EXECUTA SÓ QUANDO CLICAR
+        if Rodar_Codigo and not ESTADO_.thread_running:
+            ESTADO_.code_committed = ESTADO_.code_buffer
+            ESTADO_.output = ""
+            ESTADO_.input_queue = queue.Queue()
+            ESTADO_.output_queue = queue.Queue()
+            ESTADO_.thread_running = True
 
-if selected is not None and not selected.empty:
-	item = selected.iloc[0]
-	caminho = item["caminho"]
+            thread = threading.Thread(
+                target=run_code_thread,
+                args=(ESTADO_.code_committed, ESTADO_.input_queue, ESTADO_.output_queue),
+                daemon=True
+            )
+            thread.start()
 
-	if item["tipo"] == "pasta":
-		if caminho in st.session_state.expanded:
-			st.session_state.expanded.remove(caminho)
-		else:
-			st.session_state.expanded.add(caminho)
-		st.rerun()
-	else:
-		# ✅ FUNCIONA COM LISTA:
-		if caminho in st.session_state.selecionados:
-			st.session_state.selecionados.remove(caminho)
-		else:
-			st.session_state.selecionados.append(caminho)  # ✅ LISTA!
-		st.rerun()
+    with COL2:
+        st.subheader("📤 Terminal")
 
-# UI dos selecionados
-col1, col2 = st.columns([3, 1])
-with col1:
-	st.markdown("### 📋 Arquivos Selecionados")
-	if st.session_state.selecionados:
-		for i, caminho in enumerate(st.session_state.selecionados, 1):
-			nome_arquivo = os.path.basename(caminho)
-			st.markdown(f"{i}. `{nome_arquivo}`")
-		st.success(f"✅ Total: {len(st.session_state.selecionados)}")
-	else:
-		st.info("Nenhum arquivo selecionado")
+        # ✅ GERA KEY DINÂMICA baseada em output + ID único
+        preview_key = f"terminal_{IDES}_{hash(ESTADO_.output) % 1000}"
 
-with col2:
-	col_btn1, col_btn2 = st.columns(2)
-	with col_btn1:
-		if st.button("🗑️ Limpar", use_container_width=True):
-			st.session_state.selecionados = []
-			st.rerun()
-	with col_btn2:
-		if st.button("📤 Caminhos", use_container_width=True):
-			st.code("\n".join(st.session_state.selecionados))
+        # Processa output ANTES do widget (corrige o loop)
+        try:
+            while True:
+                msg = ESTADO_.output_queue.get_nowait()
+                if msg == "PROGRAM_FINISHED":
+                    ESTADO_.thread_running = False
+                    break
+                ESTADO_.output += '\n' + msg
+        except queue.Empty:
+            pass
 
-st.divider()
-st.caption(f"📂 {len(df)} itens | `{ROOT}`")
+        # ✅ WIDGET com key dinâmica controlada
+        preview = st_ace(
+            value=ESTADO_.output,
+            language="text",
+            height=450,
+            font_size=PREVIEW_TAM_MENU,
+            theme=THEMA_PREVIEW,
+            auto_update=True,
+            show_gutter=False,
+            show_print_margin=False,
+            wrap=True,
+            key=preview_key,  # ← NUNCA usa ESTADO_.output direto na key
+            placeholder=Diretorio
+        )
+
+        # ✅ Input automático MELHORADO
+        if (ESTADO_.thread_running and
+                len(preview) > len(ESTADO_.output) and
+                preview != ESTADO_.output):
+
+            delta = preview[len(ESTADO_.output):].rstrip('\n').strip()
+            if delta:
+                ESTADO_.input_queue.put(delta)
+                st.rerun()
+
+        else:
+            st.warning(ESTADO_.output)
+
+    if Diretorio and ESTADO_.code_buffer != ESTADO_.code_committed:
+        with open(Diretorio, "w", encoding="utf-8") as f:
+            f.write(ESTADO_.code_buffer)
+        ESTADO_.code_committed = ESTADO_.code_buffer
+
+
+# Exemplo de uso
+if __name__ == "__main__":
+    col1 = st.columns(1)[0]
+    Run = False
+    if st.button("▶️ EXECUTAR", use_container_width=True):
+        Run = True
+    Editor_Previews(Run, "./meu_codigo.py", 'python', 'merbivore', 15,
+                    'terminal', 13, 0)
+
+  --------------------------------------
+
+
+
+       Aba_Codig = []
+
+
+        st.success(f"🚀 Aba {IDES} enviada pro terminal!")
+        Aba_Codig.append(os.path.basename(Diretorio))
+        Aba_Codig.append(ESTADO_.codigo_para_executar)
+
+    # Salva arquivo automaticamente
+    if Diretorio:
+        with open(Diretorio, "w", encoding="utf-8") as f:
+            f.write(code)
+    return Aba_Codig

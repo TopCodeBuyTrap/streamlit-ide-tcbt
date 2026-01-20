@@ -2,13 +2,16 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from time import sleep
 
-from APP_SUB_Funcitons import Criar_Arquivo_TEXTO, data_sistema, resumo_pasta, limpar_CASH
+from code_editor import code_editor
+
+from APP_SUB_Funcitons import Criar_Arquivo_TEXTO, data_sistema, resumo_pasta, limpar_CASH, Button_Nao_Fecha
 from APP_SUB_Janela_Explorer import listar_pythons_windows, Apagar_Arquivos, Janela_PESQUIZA_PASTAS_ARQUIVOS, \
     Janela_PESQUIZA
 from Abertura_TCBT import Janela_Lista_Arquivos
 from Banco_dados import ler_CUSTOMIZATION, ler_cut, ATUAL_CUSTOMIZATION_nome, \
-    esc_CONTROLE_ARQUIVOS, Del_CONTROLE_ARQUIVOS, esc_B_ARQUIVOS_RECENTES, esc_A_CONTROLE_PROJETOS
+    esc_CONTROLE_ARQUIVOS, esc_A_CONTROLE_PROJETOS
 from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETO_ATUAL_, _DIRETORIO_PROJETOS_
 
 # Pega a pasta Downloads do usuário
@@ -46,7 +49,6 @@ TEMAS_ESCUROS = [
     "cobalt",  # Escuro azul
     "dracula",  # Escuro roxo popular
     "gob",  # Escuro gob
-    #"gruvbox",              # Escuro Gruvbox
     "idle_fingers",  # Escuro Idle Fingers
     #"kr_theme",             # Escuro KR
     "merbivore",  # Escuro Merbivore
@@ -167,12 +169,20 @@ def Custom(st):
     if __name__ == "__main__":
         main()
     '''
-            st_ace(
-                value=value,
-                language='python',
+            opcoes_editor = {
+            "wrap": True,
+            "fontSize": EDITOR_TAM_MENU,
+            "showLineNumbers": True,
+            "highlightActiveLine": True,
+            "fontFamily": "monospace",
+        }
+
+            code_editor(value,
+                lang='python',
                 theme=THEMA_EDITOR,
-                height=200,
-                font_size=EDITOR_TAM_MENU, )
+                height=[15, 30],
+                options = opcoes_editor,)
+
 
             st.divider()
             st1, st2, st3 = st.columns([3, 4, 1.5])
@@ -523,9 +533,6 @@ Estesões: {r['extensoes']}''')
 def Abrir_Menu(st):
     #st.link_button(label="",url="https://www.youtube.com/@topcodebuytrap",icon=":material/link:",icon_position="left")
 
-    if st.button(":material/refresh:",icon='♻️',help='limpar os caches do app'.title()):
-        limpar_CASH()
-
 
     # Opções
     option_map = {0: ":material/dashboard_customize:",
@@ -587,7 +594,7 @@ def Cria_Projeto(st):
         nome_projeto = st.text_input("Nome do projeto")
         # =========================
         # ARQUIVOS INICIAIS
-        with st.expander("📁 Arquivos iniciais do projeto", expanded=True):
+        with st.expander("📁 Arquivos iniciais do projeto", expanded=False):
 
             if "arquivos_projeto" not in st.session_state:
                 st.session_state.arquivos_projeto = [
@@ -743,11 +750,20 @@ def Cria_Projeto(st):
 
 
 
-def Apagar_Arq(st,Arq_Selec,nome):
-    st.code(f"🗑️ Tem certeza de que deseja apagar \n{nome}?")
-    if st.button(f"**❌ Apagar Sim!**", key=f"{Arq_Selec}_btn_del2", use_container_width=True,type="secondary"):
-        Apagar_Arquivos(st, Arq_Selec)
-        st.session_state.Apagar_Arquivos = False
 
+
+def Apagar_Arq(st,nome,diretorio):
+    st1, st2 = st.columns([9,1])
+    st1.text(f"🗑️ Tem certeza de que deseja apagar?")
+    st1.code(f"{nome}")
+    if st2.button("x", key="fechar_painel", ):
+        st.session_state["botao_apagar_arquivos_state"] = False
         st.rerun()
 
+    if st.button(f"**❌ Apagar Sim!**", key=f"{nome}_btn_del2", use_container_width=True,type="secondary"):
+        Apagar_Arquivos(st, diretorio)
+        st.session_state.Apagar_Arquivos = False
+
+        sleep(1.5)
+        st.session_state["botao_apagar_arquivos_state"] = False
+        st.rerun()

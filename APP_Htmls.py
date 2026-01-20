@@ -1,4 +1,4 @@
-from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_
+from APP_SUB_Controle_Driretorios import _DIRETORIO_EXECUTAVEL_, _DIRETORIO_PROJETOS_, _DIRETORIO_PROJETO_ATUAL_
 from APP_SUB_Funcitons import saudacao_por_hora_sistema
 from Banco_dados import ler_CUSTOMIZATION_coluna, ler_B_ARQUIVOS_RECENTES
 import base64
@@ -10,6 +10,7 @@ def Carregamento_BancoDados_Temas(st):
 	# ✅ CORREÇÃO 1: Chama funções ANTES de usar variáveis
 	Pasta_Isntal_exec = _DIRETORIO_EXECUTAVEL_()
 	Pasta_RAIZ_projeto = _DIRETORIO_PROJETOS_()
+	Pasta_Projeto_Atual = _DIRETORIO_PROJETO_ATUAL_()
 	Estrutura_projeto = ler_B_ARQUIVOS_RECENTES()[0][1]
 	# --------------------------------------------------------------------- CARREGAMENTO DE CUSTOMIZAÇÃO
 	NOME_CUSTOM = ler_CUSTOMIZATION_coluna('NOME_CUSTOM')
@@ -51,7 +52,6 @@ def Carregamento_BancoDados_Temas(st):
 				return base64.b64encode(f.read()).decode()
 		except:
 			return ""  # Fallback se imagem não existir
-
 	def hex_to_rgba_inverso(hex_color: str, intensidade):
 		try:
 			intensidade = float(intensidade) / 100  # 0–1
@@ -95,15 +95,19 @@ def Carregamento_BancoDados_Temas(st):
 	# ✅ CSS CORRIGIDO (sintaxe válida)
 	page_bg = f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;1,400&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;1,400&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+	    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 
+	/* CONTEÚDO CENTRAL */
+	section[data-testid="stMain6"] {{ /* REMOVER SCROLL */
+	    overflow: hidden !important;
+	}}
 
 
     /* GRUPO B — FONTE_CAMPO */
@@ -160,9 +164,9 @@ def Carregamento_BancoDados_Temas(st):
     }}
 
     
-    header.stAppHeader {{                                       /* HEADER */
+    header.stAppHeader {{                                               /* HEADER */
         padding-left: 0% !important;
-        margin-top: -10px !important;
+        margin-top: 15px !important;
         left:auto !important;
         width: 15% !important;
          /* BACKGROUND TRANSPARENTE */
@@ -176,7 +180,7 @@ def Carregamento_BancoDados_Temas(st):
 
     
     .block-container {{                                             /* BLOCO PRINCIPAL BODY*/
-        margin-top: -7.5% !important;
+        margin-top: -7% !important;
         margin-left: 0px !important;
         padding-left: 3% !important;
         margin-right: 0px !important;
@@ -192,26 +196,26 @@ def Carregamento_BancoDados_Temas(st):
         background-color: {THEMA_APP1} !important;
         margin-left: 0 !important;
         height: 110% !important;
-        margin-top: -3% !important;
+        margin-top: 3% !important;
+        
+        
         
     }}
 
-    [data-testid="stSidebarCollapseButton"] {{                                  /* BOTÃO DO SIDEBAR DE CIMA << */
-		    position: fixed !important;
-		    background-color: {THEMA_APP1} !important;
-		    top: 5% !important;
-		    left: 8% !important;
-		    z-index: 999999 !important;
+    [data-testid="stSidebarCollapseButton"] {{                                  /* BOTÃO DO SIDEBAR DE CIMA >> */
+	    position: fixed !important;
+	    background-color: {COR_CAMPO} !important;
+        border-radius: {RADIO}px !important;
+        border: {BORDA}px  !important;
 		}}
 
-    [data-testid="stExpandSidebarButton"] {{                        /* BOTÃO DO SIDEBAR DE BAIXO << */            
-        background-color: {COR_MENU} !important;
-        top: 1.5% !important;
+    [data-testid="stExpandSidebarButton"] {{                                /* BOTÃO DO SIDEBAR DE BAIXO << */            
         position: fixed !important;
+        top: 4% !important;
         left: 3px !important;
         width: 60px !important;
         height: 11px !important;
-        
+        opacity: 1 !important;
         z-index: 9999 !important;
     }}
 
@@ -226,6 +230,8 @@ def Carregamento_BancoDados_Temas(st):
 	    width: 600px; /* Largura fixa do seu bloco */
 	    transition: transform .001s ease !important; /* Animação suave */
 	}}
+
+
 
 	/* Container principal para posicionamento correto */
 	section[data-testid="stAppViewContainer"] {{
@@ -245,22 +251,19 @@ def Carregamento_BancoDados_Temas(st):
         background-color: transparent !important;
         border: 0px solid {COR_CAMPO} !important; 
         margin-bottom: -8% !important;
-        margin-left: -30% !important;   /* menos padding esquerdo = texto mais pra esquerda */
-		text-align: left !important;
+        
 	}}
 	
 	[data-testid="stBaseButton-pillsActive"] {{
         border: 0px solid {COR_CAMPO} !important; 
-		padding: 4px 8px !important;            /* mesma altura */
+		padding: 2px 8px !important;            /* mesma altura */
 		margin-bottom: 2px !important;  
 		border-radius: 0 !important;
-		margin-bottom: -8% !important;
-		margin-left: -30% !important;   /* menos padding esquerdo = texto mais pra esquerda */
-
-
+		margin-bottom: -4% !important;
+	    padding-left: -100% !important;
     }}
     
-      [data-testid="stBaseButton-secondary"]:has(kbd[aria-label="Shortcut Ctrl + Enter"]){{/* BOTAO RUN */
+      [data-testid="stBaseButton-secondary"]:has(kbd[aria-label="Shortcut Ctrl + Entereeeeeee "]){{/* BOTAO RUN */
         margin-top: -11.05% !important;
         background-color: {COR_CAMPO} !important;
         color: {COR_MENU} !important;
@@ -292,24 +295,43 @@ def Carregamento_BancoDados_Temas(st):
 
     }}
 
+
 	[data-testid="stElementContainer"][class*="st-key-rolandia12 st-emotion-cache-zh2fnc e12zf7d51"] {{  /* nao  ta usando */
 		border-radius: {RADIO+8}px !important;
 		border: {BORDA}px solid {COR_CAMPO} !important;
 		
     }}
-    
-
-    div[data-testid="stColumn"][class*="stColumn st-emotion-cache-de7oey e12zf7d52"] {{          /*  TERMINAL  */
+    div[data-testid="stVerticalBlock"][class*="st-key-Terminal_preview st-emotion-cache-1gz5zxc e12zf7d53"] {{  /* PREVIEWS  */
         background-color: {THEMA_APP2} !important;
         position: fixed !important;
-        bottom: 1.7% !important;
-        padding-left: 20% !important;
+        bottom: 10% !important;
+        padding-left:0% !important;
         right: 0% !important;
         z-index: 9999 !important;
         display: flex !important;
         justify-content: space-between !important;
         padding: 0px !important;
-        width: 89.5% !important;
+        width:50% !important; 
+		
+    }}
+	div[class*="st-key-Terminal_preview"] summary.st-emotion-cache-11ofl8m {{ /* PREVIEWS CABECALHO */
+	    background-color: {THEMA_APP1} !important;
+	    heigth:50% !important; 
+	}}
+
+
+
+    div[data-testid="stColumn"][class*="stColumn st-emotion-cache-de7oey e12zf7d52"] {{          /*  TERMINAL  */
+        background-color: {THEMA_APP2} !important;
+        position: fixed !important;
+        bottom: 1% !important;
+        padding-left:0% !important;
+        right: 0% !important;
+        z-index: 9999 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        padding: 0px !important;
+        width:100% !important;
         
     }}
 
@@ -328,11 +350,11 @@ def Carregamento_BancoDados_Temas(st):
 
 	st.markdown(page_bg, unsafe_allow_html=True)
 
-	import ast
-
-	import ast
 
 	def resumo_dict_para_html(dados_str: str) -> str:
+		import ast
+		import os
+		from datetime import datetime
 		dados = ast.literal_eval(dados_str)
 
 		pastas = dados.get("pastas", 0)
@@ -343,49 +365,63 @@ def Carregamento_BancoDados_Temas(st):
 
 		datas = dados.get("datas", [])
 		if datas:
-			criado = datas[0].get("criado", "-")
-			modificado = datas[0].get("modificado", "-")
+			criado_raw = datas[0].get("criado", "-")
+			modificado_raw = datas[0].get("modificado", "-")
+
+			try:
+				criado = datetime.strptime(criado_raw[:19], "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
+			except:
+				criado = criado_raw  # se não der pra converter, mantém o valor original
+
+			try:
+				modificado = datetime.strptime(modificado_raw[:19], "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
+			except:
+				modificado = modificado_raw
 		else:
 			criado = "-"
 			modificado = "-"
 
-		versoes = dados.get("versoes", [])
-		versoes_str = " / ".join(
-			", ".join(v) if isinstance(v, (set, list, tuple)) else str(v)
-			for v in versoes
-		)
-
+		try:
+			versoes = dados.get("versoes", [])
+			versoes_str = " / ".join(
+				", ".join(v) if isinstance(v, (set, list, tuple)) else str(v)
+				for v in versoes
+			)
+		except TypeError:
+			versoes = ''
+			versoes_str = ''
 		return f"""
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">📚 Olá {saudacao_por_hora_sistema()} </span>
-	<span>{NOME_USUARIO} !</span>
-
-	<span style="opacity:0.5;"> | </span>
-
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Sua custom atual:</span>
-	<span style="font-weight:500;"> {NOME_CUSTOM} </span>
-	<span style="margin-left:8px; color:{COR_MENU}; font-weight:700; opacity:0.85;"> e você tem nesse Projeto:</span>
-
-	<span style="margin-left:8px;">{pastas}</span>
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Pastas</span>
-
-	<span style="margin-left:8px;">{arquivos}</span>
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Arquivos</span>
-
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Extensões:</span>
-	<span style="margin-left:4px;">{extensoes_str}</span>
-	<span style="opacity:0.5;"> | </span>
-
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Criado:</span>
-	<span style="margin-left:4px;">{criado}</span>
-
-	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Modificado:</span>
-	<span style="margin-left:4px;">{modificado}</span>
-	<span style="opacity:0.5;"> | </span>
-
 	<span style="color:{COR_CAMPO}; margin-left:8px;">{versoes_str}</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">📚{saudacao_por_hora_sistema()} </span>
+	<span>{NOME_USUARIO} !</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Custom atual:</span>
+	<span style="font-weight:500;"> {NOME_CUSTOM} </span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Projeto :material/content_paste:</span>
+	<span style="font-weight:500;"> {os.path.basename(Pasta_Projeto_Atual)} </span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Criado:</span>
+	<span>{criado}</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">Modificado:</span>
+	<span>{modificado}</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;"> Projeto Com:&nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">:material/folder:</span>
+	<span >{pastas}</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">:material/insert_drive_file:</span>
+	<span >{arquivos}</span>
+	<span style="opacity:0.1;">&nbsp;&nbsp; | &nbsp;&nbsp;</span>
+	<span style="color:{COR_MENU}; font-weight:700; opacity:0.85;">:material/dynamic_feed:&nbsp;</span>
+	<span>{extensoes_str.lower().replace('/','&nbsp;')}</span>
+
+
 	"""
 
-	page_bg = f"""
+	TOP_CAB = f"""
 	<style>
 	.footer {{
 	    position: fixed !important;
@@ -402,6 +438,7 @@ def Carregamento_BancoDados_Temas(st):
 	    color: white !important;
 	    font-size: 13px !important;
 	    white-space: nowrap !important;
+	    
 	}}
 	</style>
 
@@ -410,31 +447,17 @@ def Carregamento_BancoDados_Temas(st):
 	</div>
 	"""
 
-	st.markdown(page_bg, unsafe_allow_html=True)
+	import streamlit as st
 
-	st.markdown("""
-	<style>
-		section[data-testid="stSidebar"] {
-			overflow: hidden;
-		}
-		body {
-			overflow-x: hidden;
-		}
-		.main {
-			overflow-x: hidden;
-		}
-	</style>
-	""", unsafe_allow_html=True)
+	# Injeta CSS para mudar o fundo do Ace Editor
 
 
+	# Agora seu editor Ace (exemplo com componente)
+	# content = st_ace()  # ou st.components.v1.html(...)
 
 	def criar_estilos_botao():  # ainda noa usei
 		"""Estilos CSS personalizados"""
-		return f"""
-		
-		    
-    
-    
+		return f"""		         
 	    <style>
 	    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
@@ -460,6 +483,8 @@ def Carregamento_BancoDados_Temas(st):
 	    </style>
 	    """
 
-	return IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU, THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU,THEMA_TERMINAL,TERMINAL_TAM_MENU
+	st.markdown(TOP_CAB, unsafe_allow_html=True)
+	return (IMAGEM_LOGO, NOME_CUSTOM, NOME_USUARIO, COR_CAMPO, COR_MENU, THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,
+	        PREVIEW_TAM_MENU,THEMA_TERMINAL,TERMINAL_TAM_MENU,TOP_CAB,FONTE_MENU,FONTE_CAMPO)
 
 # ✅ IMPORTS NO TOPO (CORRIGIDO)

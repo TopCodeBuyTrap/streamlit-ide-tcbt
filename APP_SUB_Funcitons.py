@@ -11,15 +11,15 @@ from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
 
 
 
-from datetime import datetime
-
-from Banco_dados import ler_B_ARQUIVOS_RECENTES
-
-
 def data_sistema():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def Linha_Sep(Cor,Larg):
+    import streamlit.components.v1 as components
+
+    HtmL =f'<div style="display: block; background-color: {Cor}; width: 100%; height: {Larg}px;"></div>'
+    return components.html(HtmL, height=Larg+9, scrolling=False)
 
 
 # ============================================================
@@ -207,17 +207,18 @@ def calcular_qualidade(codigo: str) -> Dict[str, Any]:
 
 def Identificar_linguagem(arquivo):
     EXT_MAP = {
-    ".py": "Python",
-    ".txt": "Texto",
-    ".js": "JavaScript",
-    ".html": "HTML",
-    ".css": "CSS",
-    ".json": "JSON",
-    ".md": "Markdown",
-    ".cpp": "C++",
-    ".java": "Java",
-    ".php": "PHP",
-    ".rb": "Ruby",
+    ".py": "python",
+    ".txt": "texto",
+    ".js": "javaScript",
+    ".html": "html",
+    ".css": "css",
+    ".json": "json",
+    ".md": "markdown",
+    ".cpp": "c++",
+    ".java": "java",
+    ".php": "php",
+    ".rb": "ruby",
+
 }
 
     _, ext = os.path.splitext(arquivo)
@@ -473,7 +474,9 @@ def sincronizar_estrutura(caminho_arquivo=None):
 
             # ✅ BUSCA pelo caminho_rel (tolerante a erros)
             for arq in estrutura["arquivos"]:
-                print(arq["pasta_completa"])
+                print()
+                #print(arq["pasta_completa"]) # --------------------------> henrique nao sei pq MAIS AQUI SAINO EDITOR DE PREVIEM
+
                 if str(arq["pasta_completa"]) in str(caminho_arquivo):
                     return True
                 else:
@@ -507,6 +510,46 @@ def Sinbolos(arquivo):
 
     return ICONES_EXT.get(arquivo.suffix.lower(), "📦")
 
+
+def Button_Nao_Fecha(nome_aberto, nome_fechado, key, fechar_outras=None):
+    import streamlit as st
+
+    state_key = f"{key}_state"
+    widget_key = f"{key}_widget"
+
+    if state_key not in st.session_state:
+        st.session_state[state_key] = False
+
+    def toggle():
+        st.session_state[state_key] = not st.session_state[state_key]
+        if fechar_outras:
+            for k in fechar_outras:
+                st.session_state[f"{k}_state"] = False
+
+    if st.session_state[state_key]:
+        pressed = st.button(nome_aberto, key=widget_key, on_click=toggle,
+                            use_container_width=True, type="secondary")
+    else:
+        pressed = st.button(nome_fechado, key=widget_key, on_click=toggle,
+                            use_container_width=True)
+
+    return st.session_state[state_key]
+    '''  EXEMPLI DE USO:
+    aberto = Button_Nao_Fecha(
+        nome_aberto="Painel aberto",
+        nome_fechado="Abrir painel",
+        key="painel_exemplo"
+    )
+    
+    if aberto:
+        st.markdown("### Conteúdo do painel")
+        st.write("Qualquer coisa aqui dentro")
+    
+        # BOTÃO INTERNO QUE FECHA
+        if st.button("Fechar painel", key="fechar_painel"):
+            st.session_state["painel_exemplo_state"] = False
+            st.rerun()
+    '''
 
 def chec_se_arq_do_projeto(Arq_Selec_Diretorios):
     pasta_base = Path(_DIRETORIO_PROJETO_ATUAL_())

@@ -84,11 +84,12 @@ def listar_arquivos_e_pastas(caminho):
 
 
 
-def Abrir_Arquivo_Select_Tabs(caminho_arquivo):
+def Abrir_Arquivo_Select_Tabs(st,caminho_arquivo):
+    st.write('APP_SUB_Janela_Explorer.py ALERTA:\nfunção Abrir_Arquivo_Select_Tabs() ')
     if not os.path.exists(caminho_arquivo):
-        return f"Arquivo não encontrado: {caminho_arquivo}"
+        st.warning(f"Arquivo não encontrado: {caminho_arquivo}")
     if not os.path.isfile(caminho_arquivo):
-        return f"'{caminho_arquivo}' é uma pasta, não arquivo"
+        st.warning( f"'{caminho_arquivo}' é uma pasta, não arquivo")
 
     try:
         # Tenta ajustar permissão (Windows/Linux)
@@ -96,19 +97,16 @@ def Abrir_Arquivo_Select_Tabs(caminho_arquivo):
         with open(caminho_arquivo, "r", encoding="utf-8") as f:
             return f.read()
     except PermissionError:
-        return "Sem permissão. Feche outros apps ou rode como admin."
+        st.warning("Sem permissão. Feche outros apps ou rode como admin.")
     except Exception as e:
-        return f"Erro: {e}"
+        st.warning(f"Erro: {e}")
 
 
 
 def Apagar_Arquivos(st, arquivo):
     arquivo = Path(arquivo)
 
-    st.error(f"🔍 Tentando apagar: {arquivo}")  # DEBUG
-    st.error(f"📁 É arquivo? {arquivo.is_file()}")
-    st.error(f"📁 É pasta?   {arquivo.is_dir()}")
-    st.error(f"📁 Existe?    {arquivo.exists()}")
+    st.warning(f"Game-Over pra you FDP !    {arquivo.exists()}")
 
     if not arquivo.exists():
         st.error("Arquivo não encontrado")
@@ -120,7 +118,7 @@ def Apagar_Arquivos(st, arquivo):
 
     try:
         arquivo.unlink()
-        st.success(f"✅ Arquivo apagado: {arquivo.name}")
+        st.error(f"✅ Arquivo apagado: {arquivo.name}")
     except PermissionError:
         st.error("❌ Sem permissão - feche o arquivo/editor")
     except Exception as e:

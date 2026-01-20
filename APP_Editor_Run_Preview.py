@@ -1,6 +1,3 @@
-import time
-from pathlib import Path
-
 import streamlit as st
 from streamlit_ace import st_ace
 import sys
@@ -10,9 +7,16 @@ import os
 import re
 
 from APP_Chats_IA import gerar_codigo, CODOLLAMA_CHAT
-from APP_SUB_Funcitons import Anotations_Editor, Marcadores_Editor, wrap_text
+from APP_Menus import Apagar_Arq
+from APP_SUB_Funcitons import Anotations_Editor, Marcadores_Editor, wrap_text, chec_se_arq_do_projeto, \
+    Identificar_linguagem, Button_Nao_Fecha
+from APP_SUB_Janela_Explorer import Abrir_Arquivo_Select_Tabs
 from Banco_dados import ler_CUSTOMIZATION_coluna
 from APP_SUB_Controle_Driretorios import _DIRETORIO_PROJETO_ATUAL_
+from streamlit_monaco_editor import st_monaco
+from code_editor import code_editor
+
+from SUB_Traduz_terminal import traduzir_saida
 
 
 # Funções auxiliares (Certifique-se que estão acessíveis ou no mesmo arquivo)
@@ -24,306 +28,732 @@ def smart_paste_format(code):
     return re.sub(r'\n{3,}', '\n\n', result)
 
 
-def Editor_Previews(RUN_, Arq_Selec, linguagem, height_mode, containers_order, layout, col_weights,
-                    THEMA_EDITOR,EDITOR_TAM_MENU,THEMA_PREVIEW,PREVIEW_TAM_MENU):
-    arquivo_id = "__default__"
 
-    # ============================================================= ALTURAS
-    HEIGHTS = {
-        "pequeno": 300,
-        "medio": 500,
-        "grande": 800,
-        "extra": 1200
+
+# Função auxiliar para verificar arquivos (assumindo que já existe no seu código)
+# from sua_lib import chec_se_arq_do_projeto, Identificar_linguagem, Abrir_Arquivo_Select_Tabs, Button_Nao_Fecha, Apagar_Arq
+
+
+
+
+def Terminal_Completo(THEMA_PREVIEW, PREVIEW_TAM_MENU):
+    """Terminal inteligente - toda a mágica aqui"""
+    _ = st.session_state
+
+    # ✅ LÊ A ABA EXECUTADA PELO ID (NÃO pelo nome genérico)
+    if 'aba_executando_id' in _ and _.aba_executando_id is not None:
+        aba_id = _.aba_executando_id
+        aba_nome = _.aba_executando
+        st.success(f"⬆️ ID {aba_id} - Aba {aba_nome} recebida do editor!")
+
+    # Inicialização (igual seu código original)
+    defaults = {
+        'code_committed': "",
+        'output': "",
+        'input_queue': queue.Queue(),
+        'output_queue': queue.Queue(),
+        'thread_running': False,
     }
-    BASE_HEIGHT = HEIGHTS[height_mode]
+    for key, value in defaults.items():
+        if key not in _:
+            _[key] = value
 
-    # ============================================================= COMPONENTES
-    def render_container(name, height, key):
-        """
-        Versão otimizada para rodar dentro de TABS ou FOR RANGE.
-        Usa Arq_Selec como chave única para isolar os estados.
-        """
-        # 🔧 TRATAMENTO ESPECIAL PARA TERMINAL - NÃO USA LOOP DE ARQUIVOS
-        if name == "ChatOllama":
-            with st.container(border=True):
+    class CustomStdout:
+        def __init__(self, output_q): self.output_q = output_q
 
-                key_prefix = f"state_{Arq_Selec}"
-                state = st.session_state.get(key_prefix)
+        def write(self, s):
+            if s and s.strip(): self.output_q.put(s.rstrip('\n'))
 
-                if state is None:
-                    st.warning("Editor ainda não inicializado")
-                    return
+        def flush(self): pass
 
-                # Estado interno do Chat (isolado)
-                chat_key = f"chat_{Arq_Selec}_{arquivo_id}"
-                if chat_key not in st.session_state:
-                    st.session_state[chat_key] = {
-                        "resultado": ""
-                    }
+    def run_code_thread(code, input_q, output_q):
+        def custom_input(prompt=""):
+            if prompt: output_q.put(prompt)
+            return input_q.get()
 
-                chat_state = st.session_state[chat_key]
+        stdout_redirect = CustomStdout(output_q)
+        old_stdout = sys.stdout
+        sys.stdout = stdout_redirect
 
+        try:
+            exec(code, {'input': custom_input, '__name__': '__main__'})
+            output_q.put("\n✓ Programa finalizado com sucesso!")
+        except Exception as e:
+            output_q.put(f"\n❌ Erro: {str(e)}")
+        finally:
+            sys.stdout = old_stdout
+            output_q.put("PROGRAM_FINISHED")
 
-                prompt_extra = st.text_area(
-                    "Instrução adicional (opcional)",
-                    placeholder="Ex: Otimize, explique, refatore...",
-                    height=70,key= f"text_atea{Arq_Selec}_{arquivo_id}"
-                )
+    # ✅ EXECUTA quando recebe código da aba
+    if 'codigo_para_executar' in _ and _.codigo_para_executar and not _.thread_running:
+        _.code_committed = _.codigo_para_executar
+        _.output = f"🚀 Executando código da Aba {_.get('aba_executando', '?')}...\n"
+        _.input_queue = queue.Queue()
+        _.output_queue = queue.Queue()
+        _.thread_running = True
 
-                col1, col2, col3 = st.columns(3)
+        thread = threading.Thread(
+            target=run_code_thread,
+            args=(_.code_committed, _.input_queue, _.output_queue),
+            daemon=True
+        )
+        thread.start()
 
-                with col1:
-                    criar = st.button("Criar", use_container_width=True,key=f'cria{Arq_Selec}_{arquivo_id}')
+    # Processa output da thread
+    try:
+        while True:
+            msg = _.output_queue.get_nowait()
+            if msg == "PROGRAM_FINISHED":
+                _.thread_running = False
+                break
+            _.output += msg + '\n'
+    except queue.Empty:
+        pass
+    st.warning('Arquivo não Reconhecido GmeOver!')
 
-                with col2:
-                    ajustar = st.button("Ajustar", use_container_width=True,key=f'Ajustar{Arq_Selec}_{arquivo_id}')
+    st.markdown(f'''
 
-                with col3:
-                    explicar = st.button("Explicar", use_container_width=True,key=f'Explicar{Arq_Selec}_{arquivo_id}')
-
-                # ---------------- AÇÕES ----------------
-                if criar or ajustar or explicar:
-
-                    codigo_base = state["code"]
-
-                    if criar:
-                        acao = "Crie código novo"
-                        prompt = prompt_extra or "Crie um código Python"
-
-                    elif ajustar:
-                        acao = "Refatore e melhore este código"
-                        prompt = codigo_base
-
-                    elif explicar:
-                        acao = "Explique este código com comentários"
-                        prompt = codigo_base
-
-                    try:
-                        resultado = CODOLLAMA_CHAT(prompt, acao)
-                        chat_state["resultado"] = resultado
-                    except Exception as e:
-                        chat_state["resultado"] = f"# Erro ao gerar código\n# {str(e)}"
-
-                resp = str(wrap_text(chat_state["resultado"], width=80))
-                st.code(resp, language="python")
-
-            return
-
-
-        # 1. ISOLAMENTO DE ESTADO POR ARQUIVO (SÓ PARA Editor/Preview)
-        key_prefix = f"state_{Arq_Selec}"
-
-        if key_prefix not in st.session_state:
-            # Tenta carregar o conteúdo inicial se não existir no estado
-            initial_code = ""
-            if os.path.exists(Arq_Selec):
-                with open(Arq_Selec, "r", encoding="utf-8") as f:
-                    initial_code = f.read()
-
-            st.session_state[key_prefix] = {
-                'output': "",
-                'input_queue': queue.Queue(),
-                'output_queue': queue.Queue(),
-                'thread_running': False,
-                'code': initial_code,
-                'last_save': time.time()
-            }
-
-        state = st.session_state[key_prefix]
-
-        # Garante que a chave existe caso o estado tenha sido criado por uma versão anterior sem ela
-        if 'last_save' not in state:
-            state['last_save'] = time.time()
-
-        # Classes para capturar a saída (Stdout)
-        class CustomStdout:
-            def __init__(self, output_q):
-                self.output_q = output_q
-
-            def write(self, s):
-                if s: self.output_q.put(s)
-
-            def flush(self):
-                pass
-
-        # Função que roda o código em background (mantida igual)
-        def run_code_thread(code, input_q, output_q):
-            def custom_input(prompt=""):
-                if prompt:
-                    output_q.put(prompt)
-                return input_q.get()
-
-            stdout_redirect = CustomStdout(output_q)
-            old_stdout = sys.stdout
-            sys.stdout = stdout_redirect
-
-            try:
-                # 1️⃣ Descobre pasta do projeto atual
-                Pasta_RAIZ_projeto = _DIRETORIO_PROJETO_ATUAL_()
-                Pasta_RAIZ_projeto = Path(Pasta_RAIZ_projeto)
-
-                # 2️⃣ Caminho do python da venv do projeto
-                venv_python = Pasta_RAIZ_projeto / ".virtual_tcbt" / "Scripts" / "python.exe"
-
-                # 3️⃣ Define globals que o exec vai usar
-                exec_globals = {
-                    'input': custom_input,
-                    'print': print,
-                    '__name__': '__main__',
-                    '__file__': str(Pasta_RAIZ_projeto / "main.py"),
-                }
-
-                # 4️⃣ Executa com globals corretos
-                exec(code, exec_globals)
-                output_q.put("\n✓ Programa finalizado")
-
-            except Exception as e:
-                output_q.put(f"\n❌ Erro: {str(e)}")
-            finally:
-                sys.stdout = old_stdout
-                output_q.put("PROGRAM_FINISHED")
-
-        # --------------------------------------------------------------------- EDITOR
-        if name == "Editor":
-
-            Editor_Codigo = st_ace(
-                value=state['code'],
-                theme=THEMA_EDITOR,
-                language=linguagem,
-                height=height,
-                font_size=EDITOR_TAM_MENU,
-                auto_update=False,
-                wrap=True,
-                annotations=Anotations_Editor(state['code']),
-                markers=Marcadores_Editor(state['code']),
-                key=f"editor_{Arq_Selec}_{arquivo_id}",
-            )
-
-            # Lógica de Smart Paste
-            if Editor_Codigo != state['code']:
-                if abs(len(Editor_Codigo) - len(state['code'])) > 10:
-                    state['code'] = smart_paste_format(Editor_Codigo)
-                    st.rerun()
-                else:
-                    state['code'] = Editor_Codigo
-
-            # Botão de Execução
-            if RUN_ == True:
-                if not state['thread_running']:
-                    state['output'] = ""
-                    state['thread_running'] = True
-                    state['input_queue'] = queue.Queue()
-                    state['output_queue'] = queue.Queue()
-
-                    thread = threading.Thread(
-                        target=run_code_thread,
-                        args=(state['code'], state['input_queue'], state['output_queue'])
-                    )
-                    thread.daemon = True
-                    thread.start()
-                    st.rerun()
-
-        # --------------------------------------------------------------------- PREVIEW
-        elif name == "Preview":
-            # PROCESSAMENTO DE OUTPUT
-            new_data = False
-            try:
-                while True:
-                    msg = state['output_queue'].get_nowait()
-                    if msg == "PROGRAM_FINISHED":
-                        state['thread_running'] = False
-                        break
-                    state['output'] += msg
-                    new_data = True
-            except queue.Empty:
-                pass
-
-            # TERMINAL ACE (SAÍDA/ENTRADA)
-            Terminal_Input = st_ace(
-                value=state['output'],
+    ''', unsafe_allow_html=True)
+    with st.container(border=True, key='Terminal_preview', width=900):
+        with st.expander('**:material/directions_bike: :material/code:**'):
+            preview = st_ace(
+                value=_.output,
+                language='kotlin',  #"abap", "css", "kotlin", "less", "markdown", "python"
+                height=450,
                 font_size=PREVIEW_TAM_MENU,
                 theme=THEMA_PREVIEW,
-                language=linguagem,
-                height=height,
-                auto_update=False,
+                auto_update=True,
                 show_gutter=False,
-                placeholder="Saída do console...",
+                show_print_margin=False,
                 wrap=True,
-                key=f"terminal_{Arq_Selec}_{len(state['output'])}",
+                key=_.output,
+                placeholder="Clique EXECUTAR em qualquer aba para ver o resultado aqui!"
             )
 
-            # Lógica de Input pelo Terminal
-            if state['thread_running'] and len(Terminal_Input) > len(state['output']):
-                delta = Terminal_Input[len(state['output']):]
-                if delta.strip():
-                    state['input_queue'].put(delta.strip())
-                    state['output'] += delta
+    # Input handling
+    if _.output and _.thread_running:
+        if len(preview) > len(_.output):
+            delta = preview[len(_.output):]
+            if delta.endswith("\n"):
+                clean_input = delta.rstrip("\n").strip()
+                if clean_input:
+                    _.input_queue.put(clean_input)
+                    _.output = preview
                     st.rerun()
 
-            # SALVAMENTO AUTOMÁTICO
-            if time.time() - state['last_save'] > 2:
-                try:
-                    with open(Arq_Selec, "w", encoding="utf-8") as f:
-                        f.write(state['code'])
-                    state['last_save'] = time.time()
-                except:
-                    pass
+    # ✅ RESETA se não tem código ou aba válida
+    if ('codigo_para_executar' not in _ or
+            not _.codigo_para_executar or
+            'aba_executando_id' not in _):
+        _.output = ""
+        st.info("Pronto para receber código de qualquer aba!")
+        return
+def Editor_Simples(Coluna, ColunaRun, Caminho, THEMA_EDITOR, EDITOR_TAM_MENU,FONTE):
+    _ = st.session_state
+    ab = []
 
-            # Manter UI atualizada
-            if state['thread_running'] or new_data:
-                time.sleep(0.1)
-                st.rerun()
+    # -------------------------------------------------------------------- LEITURA DAS ABAS
+    nomes_abas = [arquivo for arquivo in chec_se_arq_do_projeto(Caminho)]
+    tabs = Coluna.tabs(nomes_abas)
 
-    # ============================================================= RENDERIZAÇÃO (Layouts - Terminal participa aqui!)
-    if not containers_order:
-        st.info("Nenhum painel selecionado")
+    for IDES, tab in enumerate(tabs):
+        with tab:
+            _.tab_atual = IDES
+
+            Diretorio = Caminho[IDES]
+            Aba_Atual = os.path.basename(Diretorio)
+            linguagem = Identificar_linguagem(Diretorio)
+
+            content_key = f"conteudo_arquivo_{IDES}"
+            if content_key not in _:
+                _[content_key] = (
+                    Abrir_Arquivo_Select_Tabs(st, Diretorio)
+                    if os.path.isfile(Diretorio)
+                    else ""
+                )
+
+            code = st_ace(
+                value=_[content_key],
+                language=linguagem,
+                theme=THEMA_EDITOR,  # Tema fixo como solicitado
+                font_size=EDITOR_TAM_MENU,
+                height=850,
+                auto_update=True,
+                wrap=True,
+                annotations=Anotations_Editor(_[content_key]),
+                markers=Marcadores_Editor(_[content_key]),
+                show_print_margin=True,
+                key=f"editor_{IDES}",
+            )
+
+            _[content_key] = code
+
+            if Diretorio:
+                with open(Diretorio, "w", encoding="utf-8") as f:
+                    f.write(code)
+
+            ab.append(Aba_Atual)
+            ab.append(Diretorio)
+
+    # -------------------------------------------------------------------- RUN ÚNICO (FORA DO LOOP)
+    with ColunaRun:
+        _.setdefault("aba_executando_id", None)
+        _.setdefault("aba_executando", None)
+        _.setdefault("thread_running", False)
+
+        col_btn_apag,col_sel, col_btn_run, col_btn_stop = st.columns([1,4, 1.3, 1.3])
+
+        with col_btn_apag:
+            if Button_Nao_Fecha('🖕', ":material/delete:",key="botao_apagar_arquivos"):
+                with st.container(border=True, key='Braço_Sidebar', width=900):
+
+
+                    Apagar_Arq(st, Aba_Atual,Diretorio)
 
 
 
+        with col_sel:
+            aba_escolhida = st.selectbox(
+                "Arquivo",
+                nomes_abas,
+                key="select_run_unico",
+                label_visibility="collapsed",
+            )
+
+        with col_btn_run:
+            executar = st.button(':material/directions_bike:', shortcut="Ctrl+Enter", key="btn_run_unico")
+
+        with col_btn_stop:
+            parar = st.button(':material/stop:', shortcut="Ctrl+Space", key="btn_stop_unico")
+
+        if executar:
+            IDES = nomes_abas.index(aba_escolhida)
+            Diretorio = Caminho[IDES]
+            content_key = f"conteudo_arquivo_{IDES}"
+
+            if _.get("thread_running"):
+                _.thread_running = False
+                if "output_queue" in _:
+                    _.output_queue.put("PROGRAM_FINISHED")
+
+            _.codigo_para_executar = _.get(content_key, "")
+            _.aba_executando = aba_escolhida
+            _.aba_executando_id = IDES
+            _.nova_execucao_solicitada = True
+
+            st.toast(f"⬆️ ID {_.aba_executando_id} - Aba {_.aba_executando} enviada pro terminal!")
+            st.rerun()
+
+        # No seu código da função Editor_Simples, procure por esse bloco:
+
+        if parar:
+            if _.get("thread_running"):
+                _.thread_running = False
+                # ADICIONE A LINHA ABAIXO:
+                _.output_queue.put("PROGRAM_FINISHED")
+
+                st.toast("🛑 Execução interrompida!")
+            else:
+                st.toast("ℹ️ Nenhuma execução em andamento")
+            st.rerun()
+
+    return ab[0], ab[1]
+
+
+def Editor_Simples_ed(Coluna, ColunaRun, Caminho, THEMA_EDITOR, EDITOR_TAM_MENU, FONTE):
+    _ = st.session_state
+    ab = []
+
+    # 1. Gerencia estado da aba ativa
+    if "aba_ativa_index" not in _:
+        _.aba_ativa_index = 0
+
+    nomes_abas = [arquivo for arquivo in chec_se_arq_do_projeto(Caminho)]
+
+    # Validação do índice
+    if _.aba_ativa_index >= len(nomes_abas):
+        _.aba_ativa_index = 0
+
+    # -------------------------------------------------------------------- SELETOR DE ARQUIVOS
+    with Coluna:
+        # Usamos radio horizontal para simular abas (Muito mais leve que st.tabs)
+        # Se quiser botões tipo "Pills", use st.pills se sua versão do Streamlit suportar
+        aba_selecionada = st.radio(
+            "📍 Arquivos do Projeto",
+            options=nomes_abas,
+            index=_.aba_ativa_index,
+            horizontal=True,
+            label_visibility="collapsed",
+            key="nav_abas_editor_simples"
+        )
+        st.divider()
+
+        # Atualiza índice
+        if aba_selecionada in nomes_abas:
+            IDES = nomes_abas.index(aba_selecionada)
+            _.aba_ativa_index = IDES
+        else:
+            IDES = 0
+
+        # -------------------------------------------------------------------- EDITOR MASTER
+        Diretorio = Caminho[IDES]
+        Aba_Atual = os.path.basename(Diretorio)
+        linguagem = Identificar_linguagem(Diretorio)  # Ex: "python", "javascript"
+        st.write(linguagem)
+        content_key = f"conteudo_arquivo_{Diretorio}"
+
+        # Carrega do disco se não estiver na memória
+        if content_key not in _:
+            _[content_key] = (
+                Abrir_Arquivo_Select_Tabs(st, Diretorio)
+                if os.path.isfile(Diretorio)
+                else ""
+            )
+
+        # CONFIGURAÇÃO DO NOVO EDITOR
+        # theme="contrast" é similar ao merbivore/escuro de alto contraste
+        # Você pode usar "dark", "light", "github", "xcode", etc.
+
+        # Opções personalizadas para parecer profissional
+        opcoes_editor = {
+            # VISUAL
+            "wrap": True ,
+            "fontSize": EDITOR_TAM_MENU,  # Tamanho da fonte
+            "fontFamily": FONTE,  # Fonte (use 'Fira Code', 'JetBrains Mono', etc.)
+            "showLineNumbers": True,  # Mostrar números de linha
+            "highlightActiveLine": True,  # Destacar linha atual
+            "showGutter": True,  # Mostrar gutter (margem esquerda)
+            "showPrintMargin": True,  # Mostrar margem de impressão
+            "printMarginColumn": -.1,  # Coluna da margem de impressão
+
+            # CURSOR E SELEÇÃO
+            "highlightSelectedWord": True,  # Destacar todas ocorrências da palavra selecionada
+            "readOnly": False,  # Apenas leitura
+            "showInvisibles": False,  # Mostrar caracteres invisíveis
+            "fadeFoldWidgets": True,  # Fade nos widgets de fold
+
+            # COMPORTAMENTO
+            "tabSize": 4,  # Tamanho da tabulação
+            "useSoftTabs": True,  # Usar spaces em vez de tabs
+            "enableBasicAutocompletion": True,  # Autocompletar básico
+            "enableLiveAutocompletion": True,  # Autocompletar em tempo real
+            "enableSnippets": True,  # Suporte a snippets
+            "maxLines": 20,  # Máximo de linhas
+
+        }
+
+        btn_settings_editor_btns = [{
+            "name": "copy",
+            "feather": "Copy",
+            "hasText": True,
+            "alwaysOn": True,
+            "commands": ["copyAll"],
+            "style": {"top": "0rem", "right": "0.4rem"}
+        }, {
+            "name": "update",
+            "feather": "RefreshCw",
+            "primary": True,
+            "hasText": True,
+            "showWithIcon": True,
+            "commands": ["submit"],
+            "style": {"bottom": "0rem", "right": "0.4rem"}
+        }]
+
+        # RENDERIZAÇÃO
+        # O code_editor retorna um dicionário: {'text': "...", 'type': "..."} 'dark'
+        response_dict = code_editor(
+            _[content_key],
+            lang='python',
+            theme = THEMA_EDITOR,  # TEMA ESTÁVEL! Não some no rerun.
+            height=f'200px',  # Altura dinâmica (min, max linhas) ou fixa "850px"
+            options=opcoes_editor,
+            shortcuts= 'vscode',
+            editor_props={
+                "annotations": Anotations_Editor(_[content_key]),
+                "markers": Marcadores_Editor(_[content_key]),
+                "style": {"borderRadius": "1px 2px 8px 8px"}  # Estilo customizado
+            },
+            buttons=btn_settings_editor_btns,
+            # Key baseada no arquivo garante que ao trocar de aba, o editor recarregue corretamente
+
+        )
+
+        # Lógica de Salvamento: Só salva se houve alteração de texto
+        if response_dict['type'] == "submit" or (
+                response_dict['text'] != "" and response_dict['text'] != _[content_key]):
+            novo_codigo = response_dict['text']
+
+            # Atualiza estado e disco
+            if novo_codigo != _[content_key]:
+                _[content_key] = novo_codigo
+                if Diretorio:
+                    with open(Diretorio, "w", encoding="utf-8") as f:
+                        f.write(novo_codigo)
+                # st.toast("💾 Salvo!") # Opcional
+
+        ab.append(Aba_Atual)
+        ab.append(Diretorio)
+
+    # -------------------------------------------------------------------- PAINEL LATERAL (MANTIDO)
+    with ColunaRun:
+        _.setdefault("aba_executando_id", None)
+        _.setdefault("aba_executando", None)
+        _.setdefault("thread_running", False)
+
+        col_btn_apag, col_sel, col_btn_run, col_btn_stop = st.columns([1, 4, 1.3, 1.3])
+
+        with col_btn_apag:
+            if Button_Nao_Fecha('🖕', ":material/delete:", key="botao_apagar_arquivos"):
+                with st.container(border=True, key='Braço_Sidebar', width=900):
+                    Apagar_Arq(st, Aba_Atual, Diretorio)
+
+        with col_sel:
+            aba_escolhida = st.selectbox(
+                "Arquivo para Rodar",
+                nomes_abas,
+                index=IDES,
+                key="select_run_unico",
+                label_visibility="collapsed",
+            )
+
+        with col_btn_run:
+            executar = st.button(':material/directions_bike:', shortcut="Ctrl+Enter", key="btn_run_unico")
+
+        with col_btn_stop:
+            parar = st.button(':material/stop:', shortcut="Ctrl+Space", key="btn_stop_unico")
+
+        if executar:
+            idx_exec = nomes_abas.index(aba_escolhida)
+            dir_exec = Caminho[idx_exec]
+            ck_exec = f"conteudo_arquivo_{dir_exec}"
+
+            if _.get("thread_running"):
+                _.thread_running = False
+                if "output_queue" in _:
+                    _.output_queue.put("PROGRAM_FINISHED")
+
+            # Garante conteúdo atualizado para execução
+            if ck_exec not in _:
+                if os.path.isfile(dir_exec):
+                    _[ck_exec] = Abrir_Arquivo_Select_Tabs(st, dir_exec)
+
+            _.codigo_para_executar = _.get(ck_exec, "")
+            _.aba_executando = aba_escolhida
+            _.aba_executando_id = idx_exec
+            _.nova_execucao_solicitada = True
+
+            st.toast(f"⬆️ ID {_.aba_executando_id} - Aba {_.aba_executando} enviada pro terminal!")
+            st.rerun()
+
+        if parar:
+            if _.get("thread_running"):
+                _.thread_running = False
+                if "output_queue" in _:
+                    _.output_queue.put("PROGRAM_FINISHED")
+                st.toast("🛑 Execução interrompida!")
+            else:
+                st.toast("ℹ️ Nenhuma execução em andamento")
+            st.rerun()
+
+    return ab[0], ab[1]
+
+
+
+
+
+def Editor_Simples_radio(Coluna, ColunaRun, Caminho, THEMA_EDITOR, EDITOR_TAM_MENU,p):
+    _ = st.session_state
+    ab = []
+
+    # -------------------------------------------------------------------- LEITURA DAS ABAS
+    nomes_abas = [arquivo for arquivo in chec_se_arq_do_projeto(Caminho)]
+
+    # MUDANÇA: Em vez de tabs nativas que renderizam tudo e bugam o st_ace,
+    # usamos um seletor para renderizar APENAS UM editor por vez (o que funciona bem).
+    with Coluna:
+        # Simulando abas com radio horizontal ou pills (se disponível na versão)
+        # Usando radio horizontal como fallback robusto
+        aba_selecionada = st.radio(
+            "Arquivos abertos:",
+            options=nomes_abas,
+            horizontal=True,
+            label_visibility="collapsed",
+            key="navegacao_abas_editor"
+        )
+
+    # Identifica o índice da aba selecionada
+    if aba_selecionada in nomes_abas:
+        IDES = nomes_abas.index(aba_selecionada)
     else:
-        def get_columns(layout, col_weights, n_default):
-            """Retorna colunas corretas - VALIDAÇÃO COMPLETA"""
-            # Se não tem col_weights OU n_default inválido
-            if not col_weights or len(col_weights) != n_default:
-                return st.columns(n_default)
+        IDES = 0  # Fallback
 
-            # ✅ VALIDAÇÃO: todos os valores devem ser > 0
-            if all(w > 0 for w in col_weights):
-                return st.columns(col_weights)
+    # Lógica para renderizar SOMENTE O EDITOR ATIVO (Fora de loop de tabs!)
+    _.tab_atual = IDES
+    Diretorio = Caminho[IDES]
+    Aba_Atual = os.path.basename(Diretorio)
+    linguagem = Identificar_linguagem(Diretorio)
 
-            # Fallback se tiver valores inválidos (0 ou negativo)
-            return st.columns(n_default)
+    content_key = f"conteudo_arquivo_{IDES}"
 
-        n = len(containers_order)
+    # Inicializa conteúdo se não existir
+    if content_key not in _:
+        _[content_key] = (
+            Abrir_Arquivo_Select_Tabs(st, Diretorio)
+            if os.path.isfile(Diretorio)
+            else ""
+        )
 
-        if layout == 1:
-            cols = get_columns(layout, col_weights, n)
-            for col, name in zip(cols, containers_order):
-                with col:
-                    render_container(name, BASE_HEIGHT, f"{name}_l1")
+    with Coluna:
+        # Renderiza o editor único - isso garante estabilidade do tema
+        code = st_ace(
+            value=_[content_key],
+            language=linguagem,
+            theme=THEMA_EDITOR,  # Tema fixo como solicitado
+            font_size=EDITOR_TAM_MENU,
+            height=850,
+            auto_update=True,
+            wrap=True,
+            annotations = Anotations_Editor(_[content_key]),
+            markers  = Marcadores_Editor(_[content_key]),
+            show_print_margin=True
+            # Key única baseada no diretório para garantir que o Streamlit não reutilize o estado errado
+        )
 
-        elif layout == 2:
-            if n == 1:
-                render_container(containers_order[0], BASE_HEIGHT * 2, "single_l2")
+        # Atualiza sessão
+        _[content_key] = code
+
+        # Salva no disco
+        if Diretorio:
+            with open(Diretorio, "w", encoding="utf-8") as f:
+                f.write(code)
+
+        ab.append(Aba_Atual)
+        ab.append(Diretorio)
+
+    # -------------------------------------------------------------------- RUN ÚNICO
+    # (Mantive a lógica original do usuário aqui, apenas ajustando indentação se necessário)
+    with ColunaRun:
+        _.setdefault("aba_executando_id", None)
+        _.setdefault("aba_executando", None)
+        _.setdefault("thread_running", False)
+
+        col_btn_apag, col_sel, col_btn_run, col_btn_stop = st.columns([1, 4, 1.3, 1.3])
+
+        with col_btn_apag:
+            if Button_Nao_Fecha('🖕', ":material/delete:", key="botao_apagar_arquivos"):
+                with st.container(border=True, key='Braço_Sidebar', width=900):
+                    Apagar_Arq(st, Aba_Atual, Diretorio)
+
+        with col_sel:
+            # Sincroniza o selectbox com a aba atual para UX melhor
+            aba_escolhida = st.selectbox(
+                "Arquivo",
+                nomes_abas,
+                index=IDES if IDES < len(nomes_abas) else 0,
+                key="select_run_unico",
+                label_visibility="collapsed",
+            )
+
+        with col_btn_run:
+            executar = st.button(':material/directions_bike:', shortcut="Ctrl+Enter", key="btn_run_unico")
+
+        with col_btn_stop:
+            parar = st.button(':material/stop:', shortcut="Ctrl+Space", key="btn_stop_unico")
+
+        if executar:
+            # Lógica de execução mantida...
+            idx_exec = nomes_abas.index(aba_escolhida)
+            dir_exec = Caminho[idx_exec]
+            ck_exec = f"conteudo_arquivo_{idx_exec}"
+
+            if _.get("thread_running"):
+                _.thread_running = False
+                if "output_queue" in _:
+                    _.output_queue.put("PROGRAM_FINISHED")
+
+            _.codigo_para_executar = _.get(ck_exec, "")
+            _.aba_executando = aba_escolhida
+            _.aba_executando_id = idx_exec
+            _.nova_execucao_solicitada = True
+
+            st.toast(f"⬆️ ID {_.aba_executando_id} - Aba {_.aba_executando} enviada pro terminal!")
+            st.rerun()
+
+        if parar:
+            if _.get("thread_running"):
+                _.thread_running = False
+                if "output_queue" in _:
+                    _.output_queue.put("PROGRAM_FINISHED")
+                st.toast("🛑 Execução interrompida!")
             else:
-                left, right = st.columns(col_weights)
-                with left:
-                    render_container(containers_order[0], BASE_HEIGHT * 2 + 180, "left_l2")
-                with right:
-                    for name in containers_order[1:]:
-                        render_container(name, BASE_HEIGHT, f"{name}_right_l2")
+                st.toast("ℹ️ Nenhuma execução em andamento")
+            st.rerun()
 
-        elif layout == 3:
-            if n == 1:
-                render_container(containers_order[0], BASE_HEIGHT * 2, "single_l3")
-            else:
-                top = st.columns(col_weights)
-                for col, name in zip(top, containers_order[:2]):
-                    with col:
-                        render_container(name, BASE_HEIGHT, f"{name}_top_l3")
-                for name in containers_order[2:]:
-                    render_container(name, int(BASE_HEIGHT * 1.5), f"{name}_bottom_l3")
+    return ab[0], ab[1]
 
-        elif layout == 4:
-            for name in containers_order:
-                render_container(name, BASE_HEIGHT, f"{name}_vertical")
+
+
+#----------ANTIGA
+def Editor_Simples___(Coluna,Run, Caminho, THEMA_EDITOR, EDITOR_TAM_MENU):
+    ab= []
+    # --------------------------------------------------------------------LEITURA DA TABS  ABAS
+    nomes_abas = [arquivo for arquivo in chec_se_arq_do_projeto(Caminho)]
+    tabs = Coluna.tabs(nomes_abas)
+
+    for IDES, tab in enumerate(tabs):
+        with tab:
+            # ✅ QUANDO ENTRA NA ABA, MARCA ELA COMO ATIVA!
+            st.session_state.tab_atual = IDES
+
+            Diretorio = Caminho[IDES]
+            Aba_Atual = os.path.basename(Diretorio)
+            linguagem= Identificar_linguagem(Diretorio)
+
+            """Editor burro - só ace + botão"""
+
+            _ = st.session_state
+
+            # Carrega arquivo
+            content_key = f'conteudo_arquivo_{IDES}'
+            if content_key not in _:
+                _.content_key = Abrir_Arquivo_Select_Tabs(st, Diretorio) if os.path.isfile(Diretorio) else ""
+
+            code = st_ace(
+                value=_[content_key],
+                language=linguagem,
+                theme=THEMA_EDITOR,
+                font_size=EDITOR_TAM_MENU,
+                height=450,
+                auto_update=True,
+                wrap=True,
+                key=f"editor_{IDES}"
+            )
+            # ✅ QUANDO CLICAR EXECUTAR → MANDA PRO TERMINAL
+            if "aba_executando_id" not in st.session_state:
+                st.session_state.aba_executando_id = None
+
+            if "aba_executando" not in st.session_state:
+                st.session_state.aba_executando = None
+
+            if Run:
+                _.codigo_para_executar = code
+                _.aba_executando = Aba_Atual
+                _.aba_executando_id = IDES
+                st.success(f"⬆️ ID {_.aba_executando_id } - Aba {_.aba_executando } enviada pro terminal!")
+
+            # Salva arquivo automaticamente
+            if Diretorio:
+                with open(Diretorio, "w", encoding="utf-8") as f:
+                    f.write(code)
+            ab.append(Aba_Atual)
+            ab.append(Diretorio)
+    return ab[0], ab[1]
+def Terminal_Completo___(Coluna,THEMA_PREVIEW, PREVIEW_TAM_MENU):
+    """Terminal inteligente - toda a mágica aqui"""
+    _ = st.session_state
+
+    # ✅ LÊ A ABA EXECUTADA PELO ID (NÃO pelo nome genérico)
+    if 'aba_executando_id' in _ and _.aba_executando_id is not None:
+        aba_id = _.aba_executando_id
+        aba_nome = _.get('nomes_abas', ['?'])[aba_id] if 'nomes_abas' in _ else f"Aba {aba_id}"
+        st.success(f"🚀 Aba ID:{aba_id} - {aba_nome} recebida do editor!")
+        st.success(f"⬆️ Aba {_.aba_executando} recebida do editor!\n ️ ID {_.aba_executando_id} recebida do editor!")
+
+
+    # Inicialização (igual seu código original)
+    defaults = {
+        'code_committed': "",
+        'output': "",
+        'input_queue': queue.Queue(),
+        'output_queue': queue.Queue(),
+        'thread_running': False,
+    }
+    for key, value in defaults.items():
+        if key not in _:
+            _[key] = value
+
+    class CustomStdout:
+        def __init__(self, output_q): self.output_q = output_q
+
+        def write(self, s):
+            if s and s.strip(): self.output_q.put(s.rstrip('\n'))
+
+        def flush(self): pass
+
+    def run_code_thread(code, input_q, output_q):
+        def custom_input(prompt=""):
+            if prompt: output_q.put(prompt)
+            return input_q.get()
+
+        stdout_redirect = CustomStdout(output_q)
+        old_stdout = sys.stdout
+        sys.stdout = stdout_redirect
+
+        try:
+            exec(code, {'input': custom_input, '__name__': '__main__'})
+            output_q.put("\n✓ Programa finalizado com sucesso!")
+        except Exception as e:
+            output_q.put(f"\n❌ Erro: {str(e)}")
+        finally:
+            sys.stdout = old_stdout
+            output_q.put("PROGRAM_FINISHED")
+
+    # ✅ EXECUTA quando recebe código da aba
+    if 'codigo_para_executar' in _ and _.codigo_para_executar and not _.thread_running:
+        _.code_committed = _.codigo_para_executar
+        _.output = f"🚀 Executando código da Aba {_.get('aba_executando', '?')}...\n"
+        _.input_queue = queue.Queue()
+        _.output_queue = queue.Queue()
+        _.thread_running = True
+
+        thread = threading.Thread(
+            target=run_code_thread,
+            args=(_.code_committed, _.input_queue, _.output_queue),
+            daemon=True
+        )
+        thread.start()
+
+    # Processa output da thread
+    try:
+        while True:
+            msg = _.output_queue.get_nowait()
+            if msg == "PROGRAM_FINISHED":
+                _.thread_running = False
+                break
+            _.output += msg + '\n'
+    except queue.Empty:
+        pass
+    with Coluna:
+        preview = st_ace(
+            value=_.output,
+            language="text",
+            height=450,
+            font_size=PREVIEW_TAM_MENU,
+            theme=THEMA_PREVIEW,
+            auto_update=True,
+            show_gutter=False,
+            show_print_margin=False,
+            wrap=True,
+            key=_.output,
+            placeholder="Clique EXECUTAR em qualquer aba para ver o resultado aqui!"
+        )
+
+    # Input handling
+    if _.output and _.thread_running:
+        if len(preview) > len(_.output):
+            delta = preview[len(_.output):]
+            if delta.endswith("\n"):
+                clean_input = delta.rstrip("\n").strip()
+                if clean_input:
+                    _.input_queue.put(clean_input)
+                    _.output = preview
+                    st.rerun()
+
+    # ✅ RESETA se não tem código ou aba válida
+    if ('codigo_para_executar' not in _ or
+            not _.codigo_para_executar or
+            'aba_executando_id' not in _):
+        _.output = ""
+        st.info("Pronto para receber código de qualquer aba!")
+        return
+

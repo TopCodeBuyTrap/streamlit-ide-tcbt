@@ -441,7 +441,7 @@ def ATUAL_CUSTOMIZATION_nome(NOME_CUSTOM):
 			ATUAL_CUSTOMIZATION(NOME_CUSTOM, 'OBS', 'ATIVO')
 		else:
 			ATUAL_CUSTOMIZATION(i[0], 'OBS', 'INATIVO')
-		print(i)
+		#print(i)
 
 def Del_CUSTOMIZATION(ID=''):
 	max_retries = 3
